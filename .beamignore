@@ -1,0 +1,10 @@
+.venv
+venv
+.idea
+.vscode
+.git
+*.pyc
+__pycache__
+
+samples/
+shap_e/examples/
