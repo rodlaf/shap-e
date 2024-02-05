@@ -74,7 +74,6 @@ def render_rays(
     results = None
 
     for part_i, prev_raw_i in zip(parts, prev_raw_outputs):
-
         # Integrate over [t[i], t[i + 1]]
         results_i = part_i.render_rays(
             origin,
@@ -122,8 +121,9 @@ def render_rays(
     #     )
     # )
 
-    results.output.channels = results.output.channels + results.transmittance * void_model(
-        Query(origin, direc)
+    results.output.channels = (
+        results.output.channels
+        + results.transmittance * void_model(Query(origin, direc))
     )
 
     return results, samplers, raw_outputs
@@ -193,7 +193,8 @@ class RayVolumeIntegralResults:
             return prev_val + prev_transmittance * cur_val
 
         output = self.output.combine(
-            cur.output, combine_fn=partial(_combine_fn, prev_transmittance=self.transmittance)
+            cur.output,
+            combine_fn=partial(_combine_fn, prev_transmittance=self.transmittance),
         )
 
         combined = RayVolumeIntegralResults(
@@ -247,7 +248,9 @@ class RayVolumeIntegral:
         _, *ts_shape, _ts_dim = ts.shape
 
         # 2. Get the points along the ray and query the model
-        directions = torch.broadcast_to(direction.unsqueeze(-2), [batch_size, *ts_shape, 3])
+        directions = torch.broadcast_to(
+            direction.unsqueeze(-2), [batch_size, *ts_shape, 3]
+        )
         positions = origin.unsqueeze(-2) + ts * directions
 
         optional_directions = directions if render_with_direction else None
@@ -266,7 +269,9 @@ class RayVolumeIntegral:
             # We can append the additional queries to previous raw outputs
             # before integration
             copy = prev_raw.copy()
-            result = torch.sort(torch.cat([raw.pop("ts"), copy.pop("ts")], dim=-2), dim=-2)
+            result = torch.sort(
+                torch.cat([raw.pop("ts"), copy.pop("ts")], dim=-2), dim=-2
+            )
             merge_results = partial(self._merge_results, dim=-2, indices=result.indices)
             raw = raw.combine(copy, merge_results)
             raw.ts = result.values
@@ -332,7 +337,9 @@ class RayVolumeIntegral:
         transmittance = torch.exp(-mass[..., -1, :])
 
         alphas = 1.0 - torch.exp(-ddensity)
-        Ts = torch.exp(torch.cat([torch.zeros_like(mass[..., :1, :]), -mass[..., :-1, :]], dim=-2))
+        Ts = torch.exp(
+            torch.cat([torch.zeros_like(mass[..., :1, :]), -mass[..., :-1, :]], dim=-2)
+        )
         # This is the probability of light hitting and reflecting off of
         # something at depth [..., i, :].
         weights = alphas * Ts
@@ -379,7 +386,11 @@ class RayVolumeIntegral:
         return output, transmittance
 
     def _merge_results(
-        self, a: Optional[torch.Tensor], b: torch.Tensor, dim: int, indices: torch.Tensor
+        self,
+        a: Optional[torch.Tensor],
+        b: torch.Tensor,
+        dim: int,
+        indices: torch.Tensor,
     ):
         """
         :param a: [..., n_a, ...]. The other dictionary containing the b's may
@@ -393,12 +404,16 @@ class RayVolumeIntegral:
             return None
 
         merged = torch.cat([a, b], dim=dim)
-        return torch.gather(merged, dim=dim, index=torch.broadcast_to(indices, merged.shape))
+        return torch.gather(
+            merged, dim=dim, index=torch.broadcast_to(indices, merged.shape)
+        )
 
 
 class RaySampler(ABC):
     @abstractmethod
-    def sample(self, t0: torch.Tensor, t1: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def sample(
+        self, t0: torch.Tensor, t1: torch.Tensor, n_samples: int
+    ) -> torch.Tensor:
         """
         :param t0: start time has shape [batch_size, *shape, 1]
         :param t1: finish time has shape [batch_size, *shape, 1]
@@ -435,17 +450,26 @@ class StratifiedRaySampler(RaySampler):
         :return: sampled ts of shape [batch_size, *shape, n_samples, 1]
         """
         ones = [1] * (len(t0.shape) - 1)
-        ts = torch.linspace(0, 1, n_samples).view(*ones, n_samples).to(t0.dtype).to(t0.device)
+        ts = (
+            torch.linspace(0, 1, n_samples)
+            .view(*ones, n_samples)
+            .to(t0.dtype)
+            .to(t0.device)
+        )
 
         if self.depth_mode == "linear":
             ts = t0 * (1.0 - ts) + t1 * ts
         elif self.depth_mode == "geometric":
-            ts = (t0.clamp(epsilon).log() * (1.0 - ts) + t1.clamp(epsilon).log() * ts).exp()
+            ts = (
+                t0.clamp(epsilon).log() * (1.0 - ts) + t1.clamp(epsilon).log() * ts
+            ).exp()
         elif self.depth_mode == "harmonic":
             # The original NeRF recommends this interpolation scheme for
             # spherical scenes, but there could be some weird edge cases when
             # the observer crosses from the inner to outer volume.
-            ts = 1.0 / (1.0 / t0.clamp(epsilon) * (1.0 - ts) + 1.0 / t1.clamp(epsilon) * ts)
+            ts = 1.0 / (
+                1.0 / t0.clamp(epsilon) * (1.0 - ts) + 1.0 / t1.clamp(epsilon) * ts
+            )
 
         mids = 0.5 * (ts[..., 1:] + ts[..., :-1])
         upper = torch.cat([mids, t1], dim=-1)
@@ -463,7 +487,11 @@ class ImportanceRaySampler(RaySampler):
     """
 
     def __init__(
-        self, volume_range: VolumeRange, raw: AttrDict, blur_pool: bool = False, alpha: float = 1e-5
+        self,
+        volume_range: VolumeRange,
+        raw: AttrDict,
+        blur_pool: bool = False,
+        alpha: float = 1e-5,
     ):
         """
         :param volume_range: the range in which a ray intersects the given volume.
@@ -482,7 +510,9 @@ class ImportanceRaySampler(RaySampler):
         self.alpha = alpha
 
     @torch.no_grad()
-    def sample(self, t0: torch.Tensor, t1: torch.Tensor, n_samples: int) -> torch.Tensor:
+    def sample(
+        self, t0: torch.Tensor, t1: torch.Tensor, n_samples: int
+    ) -> torch.Tensor:
         """
         :param t0: start time has shape [batch_size, *shape, 1]
         :param t1: finish time has shape [batch_size, *shape, 1]
@@ -495,7 +525,9 @@ class ImportanceRaySampler(RaySampler):
 
         weights = self.weights
         if self.blur_pool:
-            padded = torch.cat([weights[..., :1, :], weights, weights[..., -1:, :]], dim=-2)
+            padded = torch.cat(
+                [weights[..., :1, :], weights, weights[..., -1:, :]], dim=-2
+            )
             maxes = torch.maximum(padded[..., :-1, :], padded[..., 1:, :])
             weights = 0.5 * (maxes[..., :-1, :] + maxes[..., 1:, :])
         weights = weights + self.alpha

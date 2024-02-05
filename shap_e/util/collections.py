@@ -2,8 +2,9 @@ from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional
 from typing import OrderedDict, Generic, TypeVar
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar("K")
+V = TypeVar("V")
+
 
 class AttrDict(OrderedDict[K, V], Generic[K, V]):
     """
@@ -86,7 +87,9 @@ class AttrDict(OrderedDict[K, V], Generic[K, V]):
 
         if strip:
             return {k: _dump(v) for k, v in self.items() if not k.startswith("_")}
-        return {k: _dump(v if not k.startswith("_") else repr(v)) for k, v in self.items()}
+        return {
+            k: _dump(v if not k.startswith("_") else repr(v)) for k, v in self.items()
+        }
 
     def map(
         self,
@@ -111,7 +114,9 @@ class AttrDict(OrderedDict[K, V], Generic[K, V]):
         return AttrDict({k: _apply(k, v) for k, v in self.items()})
 
     def __eq__(self, other):
-        return self.keys() == other.keys() and all(self[k] == other[k] for k in self.keys())
+        return self.keys() == other.keys() and all(
+            self[k] == other[k] for k in self.keys()
+        )
 
     def combine(
         self,

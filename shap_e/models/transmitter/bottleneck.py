@@ -96,14 +96,20 @@ class ClampDiffusionNoiseBottleneck(LatentBottleneck):
         x = x.tanh()
         if not self.training:
             return x
-        t = torch.randint(low=0, high=self.diffusion.num_timesteps, size=(len(x),), device=x.device)
+        t = torch.randint(
+            low=0, high=self.diffusion.num_timesteps, size=(len(x),), device=x.device
+        )
         t = torch.where(
-            torch.rand(len(x), device=x.device) < self.diffusion_prob, t, torch.zeros_like(t)
+            torch.rand(len(x), device=x.device) < self.diffusion_prob,
+            t,
+            torch.zeros_like(t),
         )
         return self.diffusion.q_sample(x, t)
 
 
-def latent_bottleneck_from_config(config: Dict[str, Any], device: torch.device, d_latent: int):
+def latent_bottleneck_from_config(
+    config: Dict[str, Any], device: torch.device, d_latent: int
+):
     name = config.pop("name")
     if name == "clamp_noise":
         return ClampNoiseBottleneck(**config, device=device, d_latent=d_latent)

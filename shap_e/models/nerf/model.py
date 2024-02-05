@@ -53,7 +53,9 @@ class VoidNeRFModel(MetaModule, NeRFModel):
     ):
         super().__init__()
         background = nn.Parameter(
-            torch.from_numpy(np.array(background)).to(dtype=torch.float32, device=device)
+            torch.from_numpy(np.array(background)).to(
+                dtype=torch.float32, device=device
+            )
             / channel_scale
         )
         if trainable:
@@ -69,13 +71,16 @@ class VoidNeRFModel(MetaModule, NeRFModel):
     ) -> AttrDict:
         _ = params
         default_bg = self.background[None]
-        background = options.get("background", default_bg) if options is not None else default_bg
+        background = (
+            options.get("background", default_bg) if options is not None else default_bg
+        )
 
         shape = query.position.shape[:-1]
         ones = [1] * (len(shape) - 1)
         n_channels = background.shape[-1]
         background = torch.broadcast_to(
-            background.view(background.shape[0], *ones, n_channels), [*shape, n_channels]
+            background.view(background.shape[0], *ones, n_channels),
+            [*shape, n_channels],
         )
         return background
 
@@ -110,7 +115,10 @@ class MLPNeRFModel(MetaModule, NeRFModel):
             # not used anymore
             self.register_buffer(
                 "freqs",
-                2.0 ** torch.arange(n_levels, device=device, dtype=torch.float).view(1, n_levels),
+                2.0
+                ** torch.arange(n_levels, device=device, dtype=torch.float).view(
+                    1, n_levels
+                ),
             )
 
         self.posenc_version = posenc_version
@@ -188,11 +196,16 @@ class MLPNeRFModel(MetaModule, NeRFModel):
         if self.meta_parameters:
             density_params = subdict(params, "density_mlp")
             density_mlp = partial(
-                self.density_mlp, params=density_params, options=options, log_prefix="density_"
+                self.density_mlp,
+                params=density_params,
+                options=options,
+                log_prefix="density_",
             )
             density_mlp_parameters = list(density_params.values())
         else:
-            density_mlp = partial(self.density_mlp, options=options, log_prefix="density_")
+            density_mlp = partial(
+                self.density_mlp, options=options, log_prefix="density_"
+            )
             density_mlp_parameters = self.density_mlp.parameters()
         h_density = checkpoint(
             density_mlp,
@@ -210,11 +223,16 @@ class MLPNeRFModel(MetaModule, NeRFModel):
         if self.meta_parameters:
             channel_params = subdict(params, "channel_mlp")
             channel_mlp = partial(
-                self.channel_mlp, params=channel_params, options=options, log_prefix="channel_"
+                self.channel_mlp,
+                params=channel_params,
+                options=options,
+                log_prefix="channel_",
             )
             channel_mlp_parameters = list(channel_params.values())
         else:
-            channel_mlp = partial(self.channel_mlp, options=options, log_prefix="channel_")
+            channel_mlp = partial(
+                self.channel_mlp, options=options, log_prefix="channel_"
+            )
             channel_mlp_parameters = self.channel_mlp.parameters()
         h_channel = checkpoint(
             channel_mlp,

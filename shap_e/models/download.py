@@ -47,7 +47,10 @@ def default_cache_dir() -> str:
 
 
 def fetch_file_cached(
-    url: str, progress: bool = True, cache_dir: Optional[str] = None, chunk_size: int = 4096
+    url: str,
+    progress: bool = True,
+    cache_dir: Optional[str] = None,
+    chunk_size: int = 4096,
 ) -> str:
     """
     Download the file at the given URL into a local file and return the path.
@@ -113,7 +116,10 @@ def load_config(
             f"Unknown config name {config_name}. Known names are: {CONFIG_PATHS.keys()}."
         )
     path = fetch_file_cached(
-        CONFIG_PATHS[config_name], progress=progress, cache_dir=cache_dir, chunk_size=chunk_size
+        CONFIG_PATHS[config_name],
+        progress=progress,
+        cache_dir=cache_dir,
+        chunk_size=chunk_size,
     )
     with open(path, "r") as f:
         return yaml.safe_load(f)
@@ -131,7 +137,10 @@ def load_checkpoint(
             f"Unknown checkpoint name {checkpoint_name}. Known names are: {MODEL_PATHS.keys()}."
         )
     path = fetch_file_cached(
-        MODEL_PATHS[checkpoint_name], progress=progress, cache_dir=cache_dir, chunk_size=chunk_size
+        MODEL_PATHS[checkpoint_name],
+        progress=progress,
+        cache_dir=cache_dir,
+        chunk_size=chunk_size,
     )
     return torch.load(path, map_location=device)
 

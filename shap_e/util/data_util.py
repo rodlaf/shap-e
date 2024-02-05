@@ -61,14 +61,18 @@ def load_or_create_multimodal_batch(
             for view_idx in range(mv.num_views):
                 camera, view = mv.load_view(
                     view_idx,
-                    ["R", "G", "B", "A"] if "A" in mv.channel_names else ["R", "G", "B"],
+                    ["R", "G", "B", "A"]
+                    if "A" in mv.channel_names
+                    else ["R", "G", "B"],
                 )
                 depth = None
                 if "D" in mv.channel_names:
                     _, depth = mv.load_view(view_idx, ["D"])
                     depth = process_depth(depth, mv_image_size)
                 view, alpha = process_image(
-                    np.round(view * 255.0).astype(np.uint8), mv_alpha_removal, mv_image_size
+                    np.round(view * 255.0).astype(np.uint8),
+                    mv_alpha_removal,
+                    mv_image_size,
                 )
                 camera = camera.center_crop().resize_image(mv_image_size, mv_image_size)
                 cameras.append(camera)
@@ -92,7 +96,6 @@ def load_or_create_pc(
     num_views: int,
     verbose: bool = False,
 ) -> PointCloud:
-
     assert (model_path is not None) ^ (
         mesh_path is not None
     ), "must specify exactly one of model_path or mesh_path"
@@ -118,7 +121,9 @@ def load_or_create_pc(
         if verbose:
             print("extracting point cloud from multiview...")
         pc = mv_to_pc(
-            multiview=mv, random_sample_count=random_sample_count, point_count=point_count
+            multiview=mv,
+            random_sample_count=random_sample_count,
+            point_count=point_count,
         )
         if cache_path is not None:
             pc.save(cache_path)
@@ -136,7 +141,6 @@ def load_or_create_multiview(
     light_mode: Optional[str] = None,
     verbose: bool = False,
 ) -> Iterator[BlenderViewData]:
-
     assert (model_path is not None) ^ (
         mesh_path is not None
     ), "must specify exactly one of model_path or mesh_path"
@@ -145,13 +149,19 @@ def load_or_create_multiview(
     if extract_material:
         assert light_mode is None, "light_mode is ignored when extract_material=True"
     else:
-        assert light_mode is not None, "must specify light_mode when extract_material=False"
+        assert (
+            light_mode is not None
+        ), "must specify light_mode when extract_material=False"
 
     if cache_dir is not None:
         if extract_material:
-            cache_path = bf.join(cache_dir, f"mv_{bf.basename(path)}_mat_{num_views}.zip")
+            cache_path = bf.join(
+                cache_dir, f"mv_{bf.basename(path)}_mat_{num_views}.zip"
+            )
         else:
-            cache_path = bf.join(cache_dir, f"mv_{bf.basename(path)}_{light_mode}_{num_views}.zip")
+            cache_path = bf.join(
+                cache_dir, f"mv_{bf.basename(path)}_{light_mode}_{num_views}.zip"
+            )
         if bf.exists(cache_path):
             with bf.BlobFile(cache_path, "rb") as f:
                 yield BlenderViewData(f)
@@ -192,7 +202,9 @@ def load_or_create_multiview(
             yield BlenderViewData(f)
 
 
-def mv_to_pc(multiview: ViewData, random_sample_count: int, point_count: int) -> PointCloud:
+def mv_to_pc(
+    multiview: ViewData, random_sample_count: int, point_count: int
+) -> PointCloud:
     pc = PointCloud.from_rgbd(multiview)
 
     # Handle empty samples.
@@ -212,13 +224,19 @@ def mv_to_pc(multiview: ViewData, random_sample_count: int, point_count: int) ->
     return pc
 
 
-def normalize_input_batch(batch: AttrDict, *, pc_scale: float, color_scale: float) -> AttrDict:
+def normalize_input_batch(
+    batch: AttrDict, *, pc_scale: float, color_scale: float
+) -> AttrDict:
     res = batch.copy()
-    scale_vec = torch.tensor([*([pc_scale] * 3), *([color_scale] * 3)], device=batch.points.device)
+    scale_vec = torch.tensor(
+        [*([pc_scale] * 3), *([color_scale] * 3)], device=batch.points.device
+    )
     res.points = res.points * scale_vec[:, None]
 
     if "cameras" in res:
-        res.cameras = [[cam.scale_scene(pc_scale) for cam in cams] for cams in res.cameras]
+        res.cameras = [
+            [cam.scale_scene(pc_scale) for cam in cams] for cams in res.cameras
+        ]
 
     if "depths" in res:
         res.depths = [[depth * pc_scale for depth in depths] for depths in res.depths]

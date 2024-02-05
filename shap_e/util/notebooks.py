@@ -7,7 +7,10 @@ import numpy as np
 import torch
 from PIL import Image
 
-from shap_e.models.nn.camera import DifferentiableCameraBatch, DifferentiableProjectiveCamera
+from shap_e.models.nn.camera import (
+    DifferentiableCameraBatch,
+    DifferentiableProjectiveCamera,
+)
 from shap_e.models.transmitter.base import Transmitter, VectorDecoder
 from shap_e.rendering.torch_mesh import TorchMesh
 from shap_e.util.collections import AttrDict
@@ -67,7 +70,9 @@ def decode_latent_mesh(
     latent: torch.Tensor,
 ) -> TorchMesh:
     decoded = xm.renderer.render_views(
-        AttrDict(cameras=create_pan_cameras(2, latent.device)),  # lowest resolution possible
+        AttrDict(
+            cameras=create_pan_cameras(2, latent.device)
+        ),  # lowest resolution possible
         params=(xm.encoder if isinstance(xm, Transmitter) else xm).bottleneck_to_params(
             latent[None]
         ),
@@ -79,7 +84,12 @@ def decode_latent_mesh(
 def gif_widget(images):
     writer = io.BytesIO()
     images[0].save(
-        writer, format="GIF", save_all=True, append_images=images[1:], duration=100, loop=0
+        writer,
+        format="GIF",
+        save_all=True,
+        append_images=images[1:],
+        duration=100,
+        loop=0,
     )
     writer.seek(0)
     data = base64.b64encode(writer.read()).decode("ascii")

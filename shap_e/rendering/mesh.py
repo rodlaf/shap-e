@@ -73,7 +73,9 @@ class TriMesh:
             np.savez(f, **obj_dict)
 
     def has_vertex_colors(self) -> bool:
-        return self.vertex_channels is not None and all(x in self.vertex_channels for x in "RGB")
+        return self.vertex_channels is not None and all(
+            x in self.vertex_channels for x in "RGB"
+        )
 
     def write_ply(self, raw_f: BinaryIO):
         write_ply(

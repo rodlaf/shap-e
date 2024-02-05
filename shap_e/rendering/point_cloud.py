@@ -63,7 +63,9 @@ class PointCloud:
             # Select subset of pixels that have meaningful depth/color.
             image_mask = np.isfinite(flat_values[:, depth_index])
             if "A" in channel_names:
-                image_mask = image_mask & (flat_values[:, channel_names.index("A")] >= 1 - 1e-5)
+                image_mask = image_mask & (
+                    flat_values[:, channel_names.index("A")] >= 1 - 1e-5
+                )
             image_coords = image_coords[image_mask]
             flat_values = flat_values[image_mask]
 
@@ -186,7 +188,9 @@ class PointCloud:
 
         return self.subsample(indices, **subsample_kwargs)
 
-    def subsample(self, indices: np.ndarray, average_neighbors: bool = False) -> "PointCloud":
+    def subsample(
+        self, indices: np.ndarray, average_neighbors: bool = False
+    ) -> "PointCloud":
         if not average_neighbors:
             return PointCloud(
                 coords=self.coords[indices],
@@ -194,7 +198,9 @@ class PointCloud:
             )
 
         new_coords = self.coords[indices]
-        neighbor_indices = PointCloud(coords=new_coords, channels={}).nearest_points(self.coords)
+        neighbor_indices = PointCloud(coords=new_coords, channels={}).nearest_points(
+            self.coords
+        )
 
         # Make sure every point points to itself, which might not
         # be the case if points are duplicated or there is rounding
@@ -211,7 +217,9 @@ class PointCloud:
         return PointCloud(coords=new_coords, channels=new_channels)
 
     def select_channels(self, channel_names: List[str]) -> np.ndarray:
-        data = np.stack([preprocess(self.channels[name], name) for name in channel_names], axis=-1)
+        data = np.stack(
+            [preprocess(self.channels[name], name) for name in channel_names], axis=-1
+        )
         return data
 
     def nearest_points(self, points: np.ndarray, batch_size: int = 16384) -> np.ndarray:
@@ -229,7 +237,11 @@ class PointCloud:
         all_indices = []
         for i in range(0, len(points), batch_size):
             batch = points[i : i + batch_size]
-            dists = norms + np.sum(batch**2, axis=-1)[:, None] - 2 * (batch @ self.coords.T)
+            dists = (
+                norms
+                + np.sum(batch**2, axis=-1)[:, None]
+                - 2 * (batch @ self.coords.T)
+            )
             all_indices.append(np.argmin(dists, axis=-1))
         return np.concatenate(all_indices, axis=0)
 
@@ -238,6 +250,7 @@ class PointCloud:
         return PointCloud(
             coords=np.concatenate([self.coords, other.coords], axis=0),
             channels={
-                k: np.concatenate([v, other.channels[k]], axis=0) for k, v in self.channels.items()
+                k: np.concatenate([v, other.channels[k]], axis=0)
+                for k, v in self.channels.items()
             },
         )

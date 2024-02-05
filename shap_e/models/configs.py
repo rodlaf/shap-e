@@ -35,7 +35,9 @@ from shap_e.models.transmitter.pc_encoder import (
 from shap_e.models.volume import BoundingBoxVolume, SphericalVolume, UnboundedVolume
 
 
-def model_from_config(config: Union[str, Dict[str, Any]], device: torch.device) -> nn.Module:
+def model_from_config(
+    config: Union[str, Dict[str, Any]], device: torch.device
+) -> nn.Module:
     if isinstance(config, str):
         with bf.BlobFile(config, "rb") as f:
             obj = yaml.load(f, Loader=yaml.SafeLoader)
@@ -45,19 +47,26 @@ def model_from_config(config: Union[str, Dict[str, Any]], device: torch.device) 
     name = config.pop("name")
 
     if name == "PointCloudTransformerEncoder":
-        return PointCloudTransformerEncoder(device=device, dtype=torch.float32, **config)
+        return PointCloudTransformerEncoder(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "PointCloudPerceiverEncoder":
         return PointCloudPerceiverEncoder(device=device, dtype=torch.float32, **config)
     elif name == "PointCloudTransformerChannelsEncoder":
-        return PointCloudTransformerChannelsEncoder(device=device, dtype=torch.float32, **config)
+        return PointCloudTransformerChannelsEncoder(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "PointCloudPerceiverChannelsEncoder":
-        return PointCloudPerceiverChannelsEncoder(device=device, dtype=torch.float32, **config)
+        return PointCloudPerceiverChannelsEncoder(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "MultiviewTransformerEncoder":
         return MultiviewTransformerEncoder(device=device, dtype=torch.float32, **config)
     elif name == "Transmitter":
         renderer = model_from_config(config.pop("renderer"), device=device)
         param_shapes = {
-            k: v.shape[1:] for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
+            k: v.shape[1:]
+            for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
         }
         encoder_config = config.pop("encoder").copy()
         encoder_config["param_shapes"] = param_shapes
@@ -66,13 +75,17 @@ def model_from_config(config: Union[str, Dict[str, Any]], device: torch.device) 
     elif name == "VectorDecoder":
         renderer = model_from_config(config.pop("renderer"), device=device)
         param_shapes = {
-            k: v.shape[1:] for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
+            k: v.shape[1:]
+            for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
         }
-        return VectorDecoder(param_shapes=param_shapes, renderer=renderer, device=device, **config)
+        return VectorDecoder(
+            param_shapes=param_shapes, renderer=renderer, device=device, **config
+        )
     elif name == "ChannelsDecoder":
         renderer = model_from_config(config.pop("renderer"), device=device)
         param_shapes = {
-            k: v.shape[1:] for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
+            k: v.shape[1:]
+            for k, v in batch_meta_state_dict(renderer, batch_size=1).items()
         }
         return ChannelsDecoder(
             param_shapes=param_shapes, renderer=renderer, device=device, **config
@@ -114,11 +127,17 @@ def model_from_config(config: Union[str, Dict[str, Any]], device: torch.device) 
     elif name == "PointDiffusionPerceiver":
         return PointDiffusionPerceiver(device=device, dtype=torch.float32, **config)
     elif name == "CLIPImagePointDiffusionTransformer":
-        return CLIPImagePointDiffusionTransformer(device=device, dtype=torch.float32, **config)
+        return CLIPImagePointDiffusionTransformer(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "CLIPImageGridPointDiffusionTransformer":
-        return CLIPImageGridPointDiffusionTransformer(device=device, dtype=torch.float32, **config)
+        return CLIPImageGridPointDiffusionTransformer(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "UpsamplePointDiffusionTransformer":
-        return UpsamplePointDiffusionTransformer(device=device, dtype=torch.float32, **config)
+        return UpsamplePointDiffusionTransformer(
+            device=device, dtype=torch.float32, **config
+        )
     elif name == "CLIPImageGridUpsamplePointDiffusionTransformer":
         return CLIPImageGridUpsamplePointDiffusionTransformer(
             device=device, dtype=torch.float32, **config

@@ -16,7 +16,9 @@ class PooledMLP(nn.Module):
         pool_op: str = "max",
     ):
         super().__init__()
-        self.input_embed = nn.Conv1d(input_channels, hidden_size, kernel_size=1, device=device)
+        self.input_embed = nn.Conv1d(
+            input_channels, hidden_size, kernel_size=1, device=device
+        )
         self.time_embed = nn.Linear(hidden_size, hidden_size, device=device)
 
         blocks = []
@@ -58,7 +60,11 @@ class ResBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         N, C, T = x.shape
-        out = self.body(x.permute(0, 2, 1).reshape(N * T, C)).reshape([N, T, C]).permute(0, 2, 1)
+        out = (
+            self.body(x.permute(0, 2, 1).reshape(N * T, C))
+            .reshape([N, T, C])
+            .permute(0, 2, 1)
+        )
         pooled = pool(self.pool_op, x)
         gate = self.gate(pooled)
         return x + out * gate[..., None]

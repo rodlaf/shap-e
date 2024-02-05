@@ -85,7 +85,9 @@ class ImageCLIP(nn.Module):
         embedding_seq = [None] * batch_size if embeddings is None else list(embeddings)
         assert len(image_seq) == batch_size, "number of images should match batch size"
         assert len(text_seq) == batch_size, "number of texts should match batch size"
-        assert len(embedding_seq) == batch_size, "number of embeddings should match batch size"
+        assert (
+            len(embedding_seq) == batch_size
+        ), "number of embeddings should match batch size"
 
         if self.ensure_used_params:
             return self._static_multimodal_embed(
@@ -97,7 +99,14 @@ class ImageCLIP(nn.Module):
         index_texts = []
         for i, (image, text, emb) in enumerate(zip(image_seq, text_seq, embedding_seq)):
             assert (
-                sum([int(image is not None), int(text is not None), int(emb is not None)]) < 2
+                sum(
+                    [
+                        int(image is not None),
+                        int(text is not None),
+                        int(emb is not None),
+                    ]
+                )
+                < 2
             ), "only one modality may be non-None per batch element"
             if image is not None:
                 index_images.append((i, image))
@@ -145,9 +154,9 @@ class ImageCLIP(nn.Module):
         text_flag = torch.tensor([x is not None for x in texts], device=self.device)[
             :, None
         ].expand_as(image_emb)
-        emb_flag = torch.tensor([x is not None for x in embeddings], device=self.device)[
-            :, None
-        ].expand_as(image_emb)
+        emb_flag = torch.tensor(
+            [x is not None for x in embeddings], device=self.device
+        )[:, None].expand_as(image_emb)
 
         return (
             image_flag.float() * image_emb
@@ -198,7 +207,9 @@ class ImageCLIP(nn.Module):
         x = torch.cat(
             [
                 vt.class_embedding.to(x.dtype)
-                + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
+                + torch.zeros(
+                    x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device
+                ),
                 x,
             ],
             dim=1,
@@ -213,7 +224,9 @@ class ImageCLIP(nn.Module):
         return x[..., 1:].contiguous().float() + extra_value
 
     def images_to_tensor(self, xs: Iterable[Optional[ImageType]]) -> torch.Tensor:
-        return torch.stack([self.preprocess(_image_to_pil(x)) for x in xs], dim=0).to(self.device)
+        return torch.stack([self.preprocess(_image_to_pil(x)) for x in xs], dim=0).to(
+            self.device
+        )
 
 
 class FrozenImageCLIP:
@@ -244,7 +257,9 @@ class FrozenImageCLIP:
         # We don't do a no_grad() here so that gradients could still
         # flow to the input embeddings argument.
         # This behavior is currently not used, but it could be.
-        return self.model(batch_size=batch_size, images=images, texts=texts, embeddings=embeddings)
+        return self.model(
+            batch_size=batch_size, images=images, texts=texts, embeddings=embeddings
+        )
 
     def embed_images(self, xs: Iterable[Optional[ImageType]]) -> torch.Tensor:
         with torch.no_grad():

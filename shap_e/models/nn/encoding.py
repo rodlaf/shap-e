@@ -10,7 +10,9 @@ def encode_position(version: str, *, position: torch.Tensor):
     if version == "v1":
         freqs = get_scales(0, 10, position.dtype, position.device).view(1, -1)
         freqs = position.reshape(-1, 1) * freqs
-        return torch.cat([freqs.cos(), freqs.sin()], dim=1).reshape(*position.shape[:-1], -1)
+        return torch.cat([freqs.cos(), freqs.sin()], dim=1).reshape(
+            *position.shape[:-1], -1
+        )
     elif version == "nerf":
         return posenc_nerf(position, min_deg=0, max_deg=15)
     else:
@@ -21,7 +23,9 @@ def encode_channels(version: str, *, channels: torch.Tensor):
     if version == "v1":
         freqs = get_scales(0, 10, channels.dtype, channels.device).view(1, -1)
         freqs = channels.reshape(-1, 1) * freqs
-        return torch.cat([freqs.cos(), freqs.sin()], dim=1).reshape(*channels.shape[:-1], -1)
+        return torch.cat([freqs.cos(), freqs.sin()], dim=1).reshape(
+            *channels.shape[:-1], -1
+        )
     elif version == "nerf":
         return posenc_nerf(channels, min_deg=0, max_deg=15)
     else:
@@ -42,7 +46,11 @@ def channel_encoding_channels(version: Optional[str] = None) -> int:
 
 class PosEmbLinear(nn.Linear):
     def __init__(
-        self, posemb_version: Optional[str], in_features: int, out_features: int, **kwargs
+        self,
+        posemb_version: Optional[str],
+        in_features: int,
+        out_features: int,
+        **kwargs,
     ):
         super().__init__(
             in_features * position_encoding_channels(posemb_version),
@@ -162,7 +170,9 @@ class MultiviewPointCloudEmbedding(nn.Conv2d):
             channels = encode_channels(self.posemb_version, channels=channels).permute(
                 0, 1, 4, 2, 3
             )
-            origin = encode_position(self.posemb_version, position=origin).permute(0, 1, 4, 2, 3)
+            origin = encode_position(self.posemb_version, position=origin).permute(
+                0, 1, 4, 2, 3
+            )
             position = encode_position(self.posemb_version, position=position).permute(
                 0, 1, 4, 2, 3
             )
@@ -183,7 +193,6 @@ def maybe_encode_direction(
     position: torch.Tensor,
     direction: Optional[torch.Tensor] = None,
 ):
-
     if version == "v1":
         sh_degree = 4
         if direction is None:
@@ -280,17 +289,23 @@ def spherical_harmonics_basis(
         out[:, 11] = (
             0.45704579946446572 * y * (1.0 - 5.0 * z2)
         )  # sqrt(42)*y*(1 - 5*z2)/(8*sqrt(pi))
-        out[:, 12] = 0.3731763325901154 * z * (5.0 * z2 - 3.0)  # sqrt(7)*z*(5*z2 - 3)/(4*sqrt(pi))
+        out[:, 12] = (
+            0.3731763325901154 * z * (5.0 * z2 - 3.0)
+        )  # sqrt(7)*z*(5*z2 - 3)/(4*sqrt(pi))
         out[:, 13] = (
             0.45704579946446572 * x * (1.0 - 5.0 * z2)
         )  # sqrt(42)*x*(1 - 5*z2)/(8*sqrt(pi))
-        out[:, 14] = 1.4453057213202769 * z * (x2 - y2)  # sqrt(105)*z*(x2 - y2)/(4*sqrt(pi))
+        out[:, 14] = (
+            1.4453057213202769 * z * (x2 - y2)
+        )  # sqrt(105)*z*(x2 - y2)/(4*sqrt(pi))
         out[:, 15] = (
             0.59004358992664352 * x * (-x2 + 3.0 * y2)
         )  # sqrt(70)*x*(-x2 + 3*y2)/(8*sqrt(pi))
         if sh_degree <= 4:
             return
-        out[:, 16] = 2.5033429417967046 * xy * (x2 - y2)  # 3*sqrt(35)*xy*(x2 - y2)/(4*sqrt(pi))
+        out[:, 16] = (
+            2.5033429417967046 * xy * (x2 - y2)
+        )  # 3*sqrt(35)*xy*(x2 - y2)/(4*sqrt(pi))
         out[:, 17] = (
             1.7701307697799304 * yz * (-3.0 * x2 + y2)
         )  # 3*sqrt(70)*yz*(-3*x2 + y2)/(8*sqrt(pi))
@@ -313,7 +328,9 @@ def spherical_harmonics_basis(
             1.7701307697799304 * xz * (-x2 + 3.0 * y2)
         )  # 3*sqrt(70)*xz*(-x2 + 3*y2)/(8*sqrt(pi))
         out[:, 24] = (
-            -3.7550144126950569 * x2 * y2 + 0.62583573544917614 * x4 + 0.62583573544917614 * y4
+            -3.7550144126950569 * x2 * y2
+            + 0.62583573544917614 * x4
+            + 0.62583573544917614 * y4
         )  # 3*sqrt(35)*(-6*x2*y2 + x4 + y4)/(16*sqrt(pi))
         if sh_degree <= 5:
             return
@@ -380,7 +397,9 @@ def spherical_harmonics_basis(
             0.58262136251873131 * xz * (30.0 * z2 - 33.0 * z4 - 5.0)
         )  # sqrt(273)*xz*(30*z2 - 33*z4 - 5)/(16*sqrt(pi))
         out[:, 44] = (
-            0.46060262975746175 * (x2 - y2) * (11.0 * z2 * (3.0 * z2 - 1.0) - 7.0 * z2 + 1.0)
+            0.46060262975746175
+            * (x2 - y2)
+            * (11.0 * z2 * (3.0 * z2 - 1.0) - 7.0 * z2 + 1.0)
         )  # sqrt(2730)*(x2 - y2)*(11*z2*(3*z2 - 1) - 7*z2 + 1)/(64*sqrt(pi))
         out[:, 45] = (
             -0.92120525951492349 * xz * (x2 - 3.0 * y2) * (11.0 * z2 - 3.0)
@@ -406,7 +425,10 @@ def spherical_harmonics_basis(
             5.2919213236038001 * xy * z * (-10.0 * x2 * y2 + 3.0 * x4 + 3.0 * y4)
         )  # 3*sqrt(10010)*xy*z*(-10*x2*y2 + 3*x4 + 3*y4)/(32*sqrt(pi))
         out[:, 51] = (
-            -0.51891557872026028 * y * (13.0 * z2 - 1.0) * (-10.0 * x2 * y2 + 5.0 * x4 + y4)
+            -0.51891557872026028
+            * y
+            * (13.0 * z2 - 1.0)
+            * (-10.0 * x2 * y2 + 5.0 * x4 + y4)
         )  # -3*sqrt(385)*y*(13*z2 - 1)*(-10*x2*y2 + 5*x4 + y4)/(64*sqrt(pi))
         out[:, 52] = (
             4.1513246297620823 * xy * z * (x2 - y2) * (13.0 * z2 - 3.0)
@@ -445,7 +467,10 @@ def spherical_harmonics_basis(
             1.0378311574405206 * z * (13.0 * z2 - 3.0) * (-6.0 * x2 * y2 + x4 + y4)
         )  # 3*sqrt(385)*z*(13*z2 - 3)*(-6*x2*y2 + x4 + y4)/(32*sqrt(pi))
         out[:, 61] = (
-            -0.51891557872026028 * x * (13.0 * z2 - 1.0) * (-10.0 * x2 * y2 + x4 + 5.0 * y4)
+            -0.51891557872026028
+            * x
+            * (13.0 * z2 - 1.0)
+            * (-10.0 * x2 * y2 + x4 + 5.0 * y4)
         )  # -3*sqrt(385)*x*(13*z2 - 1)*(-10*x2*y2 + x4 + 5*y4)/(64*sqrt(pi))
         out[:, 62] = (
             2.6459606618019 * z * (15.0 * x2 * y4 - 15.0 * x4 * y2 + x6 - y6)

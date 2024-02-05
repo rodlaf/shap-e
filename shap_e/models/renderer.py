@@ -143,7 +143,9 @@ class RayRenderer(Renderer):
         raise NotImplementedError
 
 
-def get_camera_from_batch(batch: AttrDict) -> Tuple[DifferentiableCamera, int, Tuple[int]]:
+def get_camera_from_batch(
+    batch: AttrDict,
+) -> Tuple[DifferentiableCamera, int, Tuple[int]]:
     if "poses" in batch:
         assert not "cameras" in batch
         batch_size, *inner_shape, n_vecs, spatial_dim = batch.poses.shape
@@ -163,7 +165,9 @@ def get_camera_from_batch(batch: AttrDict) -> Tuple[DifferentiableCamera, int, T
     return camera, batch_size, inner_shape
 
 
-def append_tensor(val_list: Optional[List[torch.Tensor]], output: Optional[torch.Tensor]):
+def append_tensor(
+    val_list: Optional[List[torch.Tensor]], output: Optional[torch.Tensor]
+):
     if val_list is None:
         return [output]
     return val_list + [output]
@@ -180,14 +184,18 @@ def render_views_from_rays(
     inner_batch_size = int(np.prod(inner_shape))
 
     coords = get_image_coords(camera.width, camera.height).to(device)
-    coords = torch.broadcast_to(coords.unsqueeze(0), [batch_size * inner_batch_size, *coords.shape])
+    coords = torch.broadcast_to(
+        coords.unsqueeze(0), [batch_size * inner_batch_size, *coords.shape]
+    )
     rays = camera.camera_rays(coords)
 
     # mip-NeRF radii calculation from: https://github.com/google/mipnerf/blob/84c969e0a623edd183b75693aed72a7e7c22902d/internal/datasets.py#L193-L200
-    directions = rays.view(batch_size, inner_batch_size, camera.height, camera.width, 2, 3)[
-        ..., 1, :
-    ]
-    neighbor_dists = torch.linalg.norm(directions[:, :, :, 1:] - directions[:, :, :, :-1], dim=-1)
+    directions = rays.view(
+        batch_size, inner_batch_size, camera.height, camera.width, 2, 3
+    )[..., 1, :]
+    neighbor_dists = torch.linalg.norm(
+        directions[:, :, :, 1:] - directions[:, :, :, :-1], dim=-1
+    )
     neighbor_dists = torch.cat([neighbor_dists, neighbor_dists[:, :, :, -2:-1]], dim=3)
     radii = (neighbor_dists * 2 / np.sqrt(12)).view(batch_size, -1, 1)
 
@@ -233,7 +241,11 @@ def render_views_from_rays(
         return sum(loss_list) / n_batches
 
     output = AttrDict(
-        {name: _resize(val_list) for name, val_list in output_list.items() if name != "aux_losses"}
+        {
+            name: _resize(val_list)
+            for name, val_list in output_list.items()
+            if name != "aux_losses"
+        }
     )
     output.aux_losses = output_list.aux_losses.map(_avg)
 

@@ -39,7 +39,9 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        assert isinstance(volume, BoundingBoxVolume), "cannot sample points in unknown volume"
+        assert isinstance(
+            volume, BoundingBoxVolume
+        ), "cannot sample points in unknown volume"
         assert (nerstf is not None) ^ (sdf is not None and tf is not None)
         self.sdf = sdf
         self.tf = tf
@@ -211,7 +213,6 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
         rendering_mode = options.get("rendering_mode", "stf")
 
         if rendering_mode == "nerf":
-
             output = render_views_from_rays(
                 self.render_rays,
                 batch,
@@ -221,7 +222,6 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
             )
 
         elif rendering_mode == "stf":
-
             sdf_fn = tf_fn = nerstf_fn = None
             if self.nerstf is not None:
                 nerstf_fn = partial(
@@ -258,7 +258,6 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
             )
 
         else:
-
             raise NotImplementedError
 
         if created_cache:
@@ -273,9 +272,13 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
         options: AttrDict[str, Any],
     ) -> torch.Tensor:
         if self.sdf is not None:
-            return self.sdf(query, params=subdict(params, "sdf"), options=options).signed_distance
+            return self.sdf(
+                query, params=subdict(params, "sdf"), options=options
+            ).signed_distance
         assert self.nerstf is not None
-        return self.nerstf(query, params=subdict(params, "nerstf"), options=options).signed_distance
+        return self.nerstf(
+            query, params=subdict(params, "nerstf"), options=options
+        ).signed_distance
 
     def get_texture(
         self,
@@ -284,6 +287,10 @@ class NeRSTFRenderer(RayRenderer, STFRendererBase):
         options: AttrDict[str, Any],
     ) -> torch.Tensor:
         if self.tf is not None:
-            return self.tf(query, params=subdict(params, "tf"), options=options).channels
+            return self.tf(
+                query, params=subdict(params, "tf"), options=options
+            ).channels
         assert self.nerstf is not None
-        return self.nerstf(query, params=subdict(params, "nerstf"), options=options).channels
+        return self.nerstf(
+            query, params=subdict(params, "nerstf"), options=options
+        ).channels

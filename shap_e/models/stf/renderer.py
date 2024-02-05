@@ -59,7 +59,9 @@ class STFRenderer(Renderer, STFRendererBase):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        assert isinstance(volume, BoundingBoxVolume), "cannot sample points in unknown volume"
+        assert isinstance(
+            volume, BoundingBoxVolume
+        ), "cannot sample points in unknown volume"
         self.sdf = sdf
         self.tf = tf
         self.volume = volume
@@ -170,7 +172,14 @@ def render_views_from_stf(
     device = camera.origin.device
     device_type = device.type
 
-    TO_CACHE = ["fields", "raw_meshes", "raw_signed_distance", "raw_density", "mesh_mask", "meshes"]
+    TO_CACHE = [
+        "fields",
+        "raw_meshes",
+        "raw_signed_distance",
+        "raw_density",
+        "mesh_mask",
+        "meshes",
+    ]
     if options.cache is not None and all(key in options.cache for key in TO_CACHE):
         fields = options.cache.fields
         raw_meshes = options.cache.raw_meshes
@@ -178,7 +187,9 @@ def render_views_from_stf(
         raw_density = options.cache.raw_density
         mesh_mask = options.cache.mesh_mask
     else:
-        query_batch_size = batch.get("query_batch_size", batch.get("ray_batch_size", 4096))
+        query_batch_size = batch.get(
+            "query_batch_size", batch.get("ray_batch_size", 4096)
+        )
         query_points = volume_query_points(volume, grid_size)
         fn = nerstf_fn if sdf_fn is None else sdf_fn
         sdf_out = fn(
@@ -214,7 +225,9 @@ def render_views_from_stf(
             raw_meshes = []
             mesh_mask = []
             for field in fields:
-                raw_mesh = marching_cubes(field, volume.bbox_min, volume.bbox_max - volume.bbox_min)
+                raw_mesh = marching_cubes(
+                    field, volume.bbox_min, volume.bbox_max - volume.bbox_min
+                )
                 if len(raw_mesh.faces) == 0:
                     # DDP deadlocks when there are unused parameters on some ranks
                     # and not others, so we make sure the field is a dependency in
@@ -222,7 +235,9 @@ def render_views_from_stf(
                     vertex_dependency = field.mean()
                     raw_mesh = TorchMesh(
                         verts=torch.zeros(3, 3, device=device) + vertex_dependency,
-                        faces=torch.tensor([[0, 1, 2]], dtype=torch.long, device=device),
+                        faces=torch.tensor(
+                            [[0, 1, 2]], dtype=torch.long, device=device
+                        ),
                     )
                     # Make sure we only feed back zero gradients to the field
                     # by masking out the final renderings of this mesh.
@@ -238,7 +253,10 @@ def render_views_from_stf(
         tf_out = fn(
             query=Query(
                 position=torch.stack(
-                    [m.verts[torch.arange(0, max_vertices) % len(m.verts)] for m in raw_meshes],
+                    [
+                        m.verts[torch.arange(0, max_vertices) % len(m.verts)]
+                        for m in raw_meshes
+                    ],
                     dim=0,
                 )
             ),
@@ -264,7 +282,9 @@ def render_views_from_stf(
         ), f"expected [meta_batch x inner_batch x texture_channels] field results, but got {textures.shape}"
         for m, texture in zip(raw_meshes, textures):
             texture = texture[: len(m.verts)]
-            m.vertex_channels = {name: ch for name, ch in zip(texture_channels, texture.unbind(-1))}
+            m.vertex_channels = {
+                name: ch for name, ch in zip(texture_channels, texture.unbind(-1))
+            }
 
     args = dict(
         options=options,
@@ -291,7 +311,9 @@ def render_views_from_stf(
 
     # Apply mask to prevent gradients for empty meshes.
     reshaped_mask = mesh_mask.view([-1] + [1] * (len(out.channels.shape) - 1))
-    out.channels = torch.where(reshaped_mask, out.channels, torch.zeros_like(out.channels))
+    out.channels = torch.where(
+        reshaped_mask, out.channels, torch.zeros_like(out.channels)
+    )
     out.transmittance = torch.where(
         reshaped_mask, out.transmittance, torch.ones_like(out.transmittance)
     )
@@ -373,11 +395,16 @@ def _render_with_pytorch3d(
             )
             results.append(imgs)
         views = torch.stack(results, dim=1)
-        views = views.view(batch_size, *inner_shape, camera.height, camera.width, n_channels + 1)
+        views = views.view(
+            batch_size, *inner_shape, camera.height, camera.width, n_channels + 1
+        )
 
         out = AttrDict(
-            channels=views[..., :-1],  # [batch_size, *inner_shape, height, width, n_channels]
-            transmittance=1 - views[..., -1:],  # [batch_size, *inner_shape, height, width, 1]
+            channels=views[
+                ..., :-1
+            ],  # [batch_size, *inner_shape, height, width, n_channels]
+            transmittance=1
+            - views[..., -1:],  # [batch_size, *inner_shape, height, width, 1]
             meshes=meshes,
         )
 
@@ -449,8 +476,11 @@ def _render_with_raycast(
             batch_size, *inner_shape, camera.height, camera.width, n_channels + 1
         )
         return AttrDict(
-            channels=views[..., :-1],  # [batch_size, *inner_shape, height, width, n_channels]
-            transmittance=1 - views[..., -1:],  # [batch_size, *inner_shape, height, width, 1]
+            channels=views[
+                ..., :-1
+            ],  # [batch_size, *inner_shape, height, width, n_channels]
+            transmittance=1
+            - views[..., -1:],  # [batch_size, *inner_shape, height, width, 1]
             meshes=all_meshes,
         )
 
@@ -470,7 +500,7 @@ def cross_entropy_sdf_loss(fields: torch.Tensor):
     losses = []
     for dim in range(1, 4):
         n = logits.shape[dim]
-        for (t_start, t_end, p_start, p_end) in [(0, -1, 1, n), (1, n, 0, -1)]:
+        for t_start, t_end, p_start, p_end in [(0, -1, 1, n), (1, n, 0, -1)]:
             targets = slice_fields(signs, dim, t_start, t_end)
             preds = slice_fields(logits, dim, p_start, p_end)
             losses.append(

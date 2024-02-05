@@ -16,7 +16,9 @@ def cast_camera(
     checkpoint: Optional[bool] = None,
 ) -> Iterator[RayCollisions]:
     pixel_indices = np.arange(camera.width * camera.height)
-    image_coords = np.stack([pixel_indices % camera.width, pixel_indices // camera.width], axis=1)
+    image_coords = np.stack(
+        [pixel_indices % camera.width, pixel_indices // camera.width], axis=1
+    )
     rays = camera.camera_rays(image_coords)
     batch_size = ray_batch_size or len(rays)
     checkpoint = checkpoint if checkpoint is not None else batch_size < len(rays)
@@ -24,7 +26,9 @@ def cast_camera(
         sub_rays = rays[i : i + batch_size]
         origins = torch.from_numpy(sub_rays[:, 0]).to(mesh.vertices)
         directions = torch.from_numpy(sub_rays[:, 1]).to(mesh.vertices)
-        yield cast_rays(Rays(origins=origins, directions=directions), mesh, checkpoint=checkpoint)
+        yield cast_rays(
+            Rays(origins=origins, directions=directions), mesh, checkpoint=checkpoint
+        )
 
 
 def cast_rays(rays: Rays, mesh: TriMesh, checkpoint: bool = False) -> RayCollisions:
@@ -32,7 +36,13 @@ def cast_rays(rays: Rays, mesh: TriMesh, checkpoint: bool = False) -> RayCollisi
     Cast a batch of rays onto a mesh.
     """
     if checkpoint:
-        collides, ray_dists, tri_indices, barycentric, normals = RayCollisionFunction.apply(
+        (
+            collides,
+            ray_dists,
+            tri_indices,
+            barycentric,
+            normals,
+        ) = RayCollisionFunction.apply(
             rays.origins, rays.directions, mesh.faces, mesh.vertices
         )
         return RayCollisions(
@@ -105,11 +115,22 @@ class RayCollisionFunction(torch.autograd.Function):
                 TriMesh(faces=faces, vertices=vertices),
                 checkpoint=False,
             )
-        return (res.collides, res.ray_dists, res.tri_indices, res.barycentric, res.normals)
+        return (
+            res.collides,
+            res.ray_dists,
+            res.tri_indices,
+            res.barycentric,
+            res.normals,
+        )
 
     @staticmethod
     def backward(
-        ctx, _collides_grad, ray_dists_grad, _tri_indices_grad, barycentric_grad, normals_grad
+        ctx,
+        _collides_grad,
+        ray_dists_grad,
+        _tri_indices_grad,
+        barycentric_grad,
+        normals_grad,
     ):
         origins, directions, faces, vertices = ctx.input_tensors
 

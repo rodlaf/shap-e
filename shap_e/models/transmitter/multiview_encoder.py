@@ -76,7 +76,8 @@ class MultiviewTransformerEncoder(VectorEncoder):
         self.register_parameter(
             "pos_emb",
             nn.Parameter(
-                pos_emb_init_scale * torch.randn(self.n_ctx, width, device=device, dtype=dtype)
+                pos_emb_init_scale
+                * torch.randn(self.n_ctx, width, device=device, dtype=dtype)
             ),
         )
         self.patch_emb = nn.Conv2d(
@@ -94,14 +95,20 @@ class MultiviewTransformerEncoder(VectorEncoder):
             nn.GELU(),
             nn.Linear(width, width, device=device, dtype=dtype),
         )
-        self.output_proj = nn.Linear(width, d_latent // latent_ctx, device=device, dtype=dtype)
+        self.output_proj = nn.Linear(
+            width, d_latent // latent_ctx, device=device, dtype=dtype
+        )
 
-    def encode_to_vector(self, batch: AttrDict, options: Optional[AttrDict] = None) -> torch.Tensor:
+    def encode_to_vector(
+        self, batch: AttrDict, options: Optional[AttrDict] = None
+    ) -> torch.Tensor:
         _ = options
 
         all_views = self.views_to_tensor(batch.views).to(self.device)
         if self.use_depth:
-            all_views = torch.cat([all_views, self.depths_to_tensor(batch.depths)], dim=2)
+            all_views = torch.cat(
+                [all_views, self.depths_to_tensor(batch.depths)], dim=2
+            )
         all_cameras = self.cameras_to_tensor(batch.cameras).to(self.device)
 
         batch_size, num_views, _, _, _ = all_views.shape
@@ -115,9 +122,13 @@ class MultiviewTransformerEncoder(VectorEncoder):
             .contiguous()
         )  # [batch_size x num_views x n_patches x width]
 
-        cameras_proj = self.camera_emb(all_cameras).reshape([batch_size, num_views, 1, self.width])
+        cameras_proj = self.camera_emb(all_cameras).reshape(
+            [batch_size, num_views, 1, self.width]
+        )
 
-        h = torch.cat([views_proj, cameras_proj], dim=2).reshape([batch_size, -1, self.width])
+        h = torch.cat([views_proj, cameras_proj], dim=2).reshape(
+            [batch_size, -1, self.width]
+        )
         h = h + self.pos_emb
         h = torch.cat([h, self.output_tokens[None].repeat(len(h), 1, 1)], dim=1)
         h = self.ln_pre(h)
@@ -128,7 +139,9 @@ class MultiviewTransformerEncoder(VectorEncoder):
 
         return h
 
-    def views_to_tensor(self, views: Union[torch.Tensor, List[List[Image.Image]]]) -> torch.Tensor:
+    def views_to_tensor(
+        self, views: Union[torch.Tensor, List[List[Image.Image]]]
+    ) -> torch.Tensor:
         """
         Returns a [batch x num_views x 3 x size x size] tensor in the range [-1, 1].
         """
@@ -142,7 +155,9 @@ class MultiviewTransformerEncoder(VectorEncoder):
             for img in inner_list:
                 img = img.resize((self.image_size,) * 2).convert("RGB")
                 inner_batch.append(
-                    torch.from_numpy(np.array(img)).to(device=self.device, dtype=torch.float32)
+                    torch.from_numpy(np.array(img)).to(
+                        device=self.device, dtype=torch.float32
+                    )
                     / 127.5
                     - 1
                 )
@@ -163,7 +178,9 @@ class MultiviewTransformerEncoder(VectorEncoder):
             assert len(inner_list) == self.num_views
             inner_batch = []
             for arr in inner_list:
-                tensor = torch.from_numpy(arr).clamp(max=self.max_depth) / self.max_depth
+                tensor = (
+                    torch.from_numpy(arr).clamp(max=self.max_depth) / self.max_depth
+                )
                 tensor = tensor * 2 - 1
                 tensor = F.interpolate(
                     tensor[None, None],

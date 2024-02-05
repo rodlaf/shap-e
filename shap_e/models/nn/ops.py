@@ -13,7 +13,11 @@ from .pointnet2_utils import sample_and_group, sample_and_group_all
 
 
 def gelu(x):
-    return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+    return (
+        0.5
+        * x
+        * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+    )
 
 
 def swish(x):
@@ -127,26 +131,31 @@ class MetaLinear(MetaModule):
         super().__init__()
         # n_in, n_out, bias=bias)
         register_meta_fn = (
-            self.register_meta_parameter if trainable_meta else self.register_meta_buffer
+            self.register_meta_parameter
+            if trainable_meta
+            else self.register_meta_buffer
         )
         if meta_scale:
             register_meta_fn("scale", nn.Parameter(torch.ones(n_out, **kwargs)))
         if meta_shift:
             register_meta_fn("shift", nn.Parameter(torch.zeros(n_out, **kwargs)))
 
-        register_proj_fn = self.register_parameter if not meta_proj else register_meta_fn
+        register_proj_fn = (
+            self.register_parameter if not meta_proj else register_meta_fn
+        )
         register_proj_fn("weight", nn.Parameter(torch.empty((n_out, n_in), **kwargs)))
 
         if not bias:
             self.register_parameter("bias", None)
         else:
-            register_bias_fn = self.register_parameter if not meta_bias else register_meta_fn
+            register_bias_fn = (
+                self.register_parameter if not meta_bias else register_meta_fn
+            )
             register_bias_fn("bias", nn.Parameter(torch.empty(n_out, **kwargs)))
 
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-
         # from https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
 
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
@@ -194,7 +203,9 @@ def Conv(n_dim, d_in, d_out, kernel, stride=1, padding=0, dilation=1, **kwargs):
         2: nn.Conv2d,
         3: nn.Conv3d,
     }[n_dim]
-    return cls(d_in, d_out, kernel, stride=stride, padding=padding, dilation=dilation, **kwargs)
+    return cls(
+        d_in, d_out, kernel, stride=stride, padding=padding, dilation=dilation, **kwargs
+    )
 
 
 def flatten(x):
@@ -239,7 +250,9 @@ class MLP(nn.Module):
         super().__init__()
 
         ds = [d_input] + d_hidden + [d_output]
-        affines = [nn.Linear(d_in, d_out, bias=bias) for d_in, d_out in zip(ds[:-1], ds[1:])]
+        affines = [
+            nn.Linear(d_in, d_out, bias=bias) for d_in, d_out in zip(ds[:-1], ds[1:])
+        ]
         self.d = ds
         self.affines = nn.ModuleList(affines)
         self.act = get_act(act_name)
@@ -297,7 +310,9 @@ class MetaMLP(MetaModule):
         if zero_out:
             zero_init(affines[-1])
 
-    def forward(self, h, params=None, options: Optional[AttrDict] = None, log_prefix: str = ""):
+    def forward(
+        self, h, params=None, options: Optional[AttrDict] = None, log_prefix: str = ""
+    ):
         options = AttrDict() if options is None else AttrDict(options)
         params = self.update(params)
         *hid, out = self.affines
@@ -310,7 +325,10 @@ class MetaMLP(MetaModule):
 
 class LayerNorm(nn.LayerNorm):
     def __init__(
-        self, norm_shape: Union[int, Tuple[int]], eps: float = 1e-5, elementwise_affine: bool = True
+        self,
+        norm_shape: Union[int, Tuple[int]],
+        eps: float = 1e-5,
+        elementwise_affine: bool = True,
     ):
         super().__init__(norm_shape, eps=eps, elementwise_affine=elementwise_affine)
         self.width = np.prod(norm_shape)
@@ -405,6 +423,8 @@ class PointSetEmbedding(nn.Module):
         # Shuffle the representations
         if self.patch_size > 1:
             # TODO shuffle deterministically when not self.training
-            _, indices = torch.rand(batch, channels, n_samples, 1, device=points.device).sort(dim=2)
+            _, indices = torch.rand(
+                batch, channels, n_samples, 1, device=points.device
+            ).sort(dim=2)
             points = torch.gather(points, 2, torch.broadcast_to(indices, points.shape))
         return conv(points)

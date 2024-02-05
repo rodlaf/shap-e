@@ -19,7 +19,13 @@ def flatten_param_shapes(param_shapes: Dict[str, Tuple[int]]):
 
 
 class ParamsProj(nn.Module, ABC):
-    def __init__(self, *, device: torch.device, param_shapes: Dict[str, Tuple[int]], d_latent: int):
+    def __init__(
+        self,
+        *,
+        device: torch.device,
+        param_shapes: Dict[str, Tuple[int]],
+        d_latent: int,
+    ):
         super().__init__()
         self.device = device
         self.param_shapes = param_shapes
@@ -176,7 +182,10 @@ class ChannelsParamsProj(ParamsProj):
 
 
 def params_proj_from_config(
-    config: Dict[str, Any], device: torch.device, param_shapes: Dict[str, Tuple[int]], d_latent: int
+    config: Dict[str, Any],
+    device: torch.device,
+    param_shapes: Dict[str, Tuple[int]],
+    d_latent: int,
 ):
     name = config.pop("name")
     if name == "linear":
@@ -184,7 +193,9 @@ def params_proj_from_config(
             **config, device=device, param_shapes=param_shapes, d_latent=d_latent
         )
     elif name == "mlp":
-        return MLPParamsProj(**config, device=device, param_shapes=param_shapes, d_latent=d_latent)
+        return MLPParamsProj(
+            **config, device=device, param_shapes=param_shapes, d_latent=d_latent
+        )
     elif name == "channels":
         return ChannelsParamsProj(
             **config, device=device, param_shapes=param_shapes, d_latent=d_latent

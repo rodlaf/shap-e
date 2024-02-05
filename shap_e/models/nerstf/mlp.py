@@ -90,7 +90,9 @@ class MLPNeRSTFModel(MLPModel):
             query.position, query.direction, params=params, options=options
         )
         activations = map_indices_to_keys(self.h_map, h)
-        activations.update(map_indices_to_keys(self.h_directionless_map, h_directionless))
+        activations.update(
+            map_indices_to_keys(self.h_directionless_map, h_directionless)
+        )
 
         if options.nerf_level == "coarse":
             h_density = activations.density_coarse
@@ -165,7 +167,9 @@ def indices_for_output_mode(
     return h_map, h_directionless_map
 
 
-def map_indices_to_keys(mapping: IndexMapping, data: torch.Tensor) -> AttrDict[str, torch.Tensor]:
+def map_indices_to_keys(
+    mapping: IndexMapping, data: torch.Tensor
+) -> AttrDict[str, torch.Tensor]:
     return AttrDict({k: data[..., start:end] for k, (start, end) in mapping.items()})
 
 

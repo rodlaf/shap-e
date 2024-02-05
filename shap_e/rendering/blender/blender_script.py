@@ -152,7 +152,9 @@ def pan_camera(time, axis="Z", camera_dist=2.0, elevation=0.1):
     set_camera(direction, camera_dist=camera_dist)
 
 
-def place_camera(time, camera_pose_mode="random", camera_dist_min=2.0, camera_dist_max=2.0):
+def place_camera(
+    time, camera_pose_mode="random", camera_dist_min=2.0, camera_dist_max=2.0
+):
     camera_dist = random.uniform(camera_dist_min, camera_dist_max)
     if camera_pose_mode == "random":
         randomize_camera(camera_dist=camera_dist)
@@ -282,7 +284,9 @@ def setup_material_extraction_shaders(capturing_material_alpha: bool):
     # materials in the project, and then modify them each once.
     undo_fns = []
     for mat in find_materials():
-        undo_fn = setup_material_extraction_shader_for_material(mat, capturing_material_alpha)
+        undo_fn = setup_material_extraction_shader_for_material(
+            mat, capturing_material_alpha
+        )
         if undo_fn is not None:
             undo_fns.append(undo_fn)
     return lambda: [undo_fn() for undo_fn in undo_fns]
@@ -309,7 +313,9 @@ def setup_material_extraction_shader_for_material(mat, capturing_material_alpha:
     old_base_color = get_socket_value(mat.node_tree, socket_map["Base Color"])
     old_alpha = get_socket_value(mat.node_tree, socket_map["Alpha"])
     old_emission = get_socket_value(mat.node_tree, socket_map["Emission"])
-    old_emission_strength = get_socket_value(mat.node_tree, socket_map["Emission Strength"])
+    old_emission_strength = get_socket_value(
+        mat.node_tree, socket_map["Emission Strength"]
+    )
     old_specular = get_socket_value(mat.node_tree, socket_map["Specular"])
 
     # Make sure the base color of all objects is black and the opacity
@@ -337,7 +343,9 @@ def setup_material_extraction_shader_for_material(mat, capturing_material_alpha:
         set_socket_value(mat.node_tree, socket_map["Base Color"], old_base_color)
         set_socket_value(mat.node_tree, socket_map["Alpha"], old_alpha)
         set_socket_value(mat.node_tree, socket_map["Emission"], old_emission)
-        set_socket_value(mat.node_tree, socket_map["Emission Strength"], old_emission_strength)
+        set_socket_value(
+            mat.node_tree, socket_map["Emission Strength"], old_emission_strength
+        )
         set_socket_value(mat.node_tree, socket_map["Specular"], old_specular)
 
     return undo_fn
@@ -371,7 +379,9 @@ def set_socket_value(tree, socket, socket_and_default):
         tree.links.new(old_source_socket, socket)
 
 
-def setup_nodes(output_path, capturing_material_alpha: bool = False, basic_lighting: bool = False):
+def setup_nodes(
+    output_path, capturing_material_alpha: bool = False, basic_lighting: bool = False
+):
     tree = bpy.context.scene.node_tree
     links = tree.links
 
@@ -428,13 +438,17 @@ def setup_nodes(output_path, capturing_material_alpha: bool = False, basic_light
             )
             diffuse = node_abs(dot)
             # Compute ambient + diffuse lighting
-            brightness = node_add(BASIC_AMBIENT_COLOR, node_mul(BASIC_DIFFUSE_COLOR, diffuse))
+            brightness = node_add(
+                BASIC_AMBIENT_COLOR, node_mul(BASIC_DIFFUSE_COLOR, diffuse)
+            )
             # Modulate the RGB channels using the total brightness.
             rgba_node = tree.nodes.new(type="CompositorNodeSepRGBA")
             tree.links.new(raw_color_socket, rgba_node.inputs[0])
             combine_node = tree.nodes.new(type="CompositorNodeCombRGBA")
             for i in range(3):
-                tree.links.new(node_mul(rgba_node.outputs[i], brightness), combine_node.inputs[i])
+                tree.links.new(
+                    node_mul(rgba_node.outputs[i], brightness), combine_node.inputs[i]
+                )
             tree.links.new(rgba_node.outputs[3], combine_node.inputs[3])
             raw_color_socket = combine_node.outputs[0]
 
@@ -451,7 +465,9 @@ def setup_nodes(output_path, capturing_material_alpha: bool = False, basic_light
     # Create separate file output nodes for every channel we care about.
     # The process calling this script must decide how to recombine these
     # channels, possibly into a single image.
-    for i, channel in enumerate("rgba") if not capturing_material_alpha else [(0, "MatAlpha")]:
+    for i, channel in (
+        enumerate("rgba") if not capturing_material_alpha else [(0, "MatAlpha")]
+    ):
         output_node = tree.nodes.new(type="CompositorNodeOutputFile")
         output_node.base_path = f"{output_path}_{channel}"
         links.new(split_node.outputs[i], output_node.inputs[0])
@@ -466,12 +482,16 @@ def setup_nodes(output_path, capturing_material_alpha: bool = False, basic_light
     links.new(depth_out, output_node.inputs[0])
 
 
-def render_scene(output_path, fast_mode: bool, extract_material: bool, basic_lighting: bool):
+def render_scene(
+    output_path, fast_mode: bool, extract_material: bool, basic_lighting: bool
+):
     use_workbench = bpy.context.scene.render.engine == "BLENDER_WORKBENCH"
     if use_workbench:
         # We must use a different engine to compute depth maps.
         bpy.context.scene.render.engine = "BLENDER_EEVEE"
-        bpy.context.scene.eevee.taa_render_samples = 1  # faster, since we discard image.
+        bpy.context.scene.eevee.taa_render_samples = (
+            1  # faster, since we discard image.
+        )
     if fast_mode:
         if bpy.context.scene.render.engine == "BLENDER_EEVEE":
             bpy.context.scene.eevee.taa_render_samples = 1
@@ -497,7 +517,9 @@ def render_scene(output_path, fast_mode: bool, extract_material: bool, basic_lig
     bpy.context.scene.render.filepath = output_path
     if extract_material:
         for do_alpha in [False, True]:
-            undo_fn = setup_material_extraction_shaders(capturing_material_alpha=do_alpha)
+            undo_fn = setup_material_extraction_shaders(
+                capturing_material_alpha=do_alpha
+            )
             setup_nodes(output_path, capturing_material_alpha=do_alpha)
             bpy.ops.render.render(write_still=True)
             undo_fn()
@@ -507,7 +529,14 @@ def render_scene(output_path, fast_mode: bool, extract_material: bool, basic_lig
 
     # The output images must be moved from their own sub-directories, or
     # discarded if we are using workbench for the color.
-    for channel_name in ["r", "g", "b", "a", "depth", *(["MatAlpha"] if extract_material else [])]:
+    for channel_name in [
+        "r",
+        "g",
+        "b",
+        "a",
+        "depth",
+        *(["MatAlpha"] if extract_material else []),
+    ]:
         sub_dir = f"{output_path}_{channel_name}"
         image_path = os.path.join(sub_dir, os.listdir(sub_dir)[0])
         name, ext = os.path.splitext(output_path)
@@ -585,8 +614,12 @@ def save_rendering_dataset(
     assert camera_pose in ["random", "z-circular", "z-circular-elevated"]
 
     basic_lighting = light_mode == "basic"
-    assert not (basic_lighting and extract_material), "cannot extract material with basic lighting"
-    assert not (delete_material and extract_material), "cannot extract material and delete it"
+    assert not (
+        basic_lighting and extract_material
+    ), "cannot extract material with basic lighting"
+    assert not (
+        delete_material and extract_material
+    ), "cannot extract material and delete it"
 
     import_model(input_path)
     bpy.context.scene.render.engine = backend
@@ -629,7 +662,14 @@ def save_rendering_dataset(
             fast_mode=fast_mode,
             extract_material=extract_material,
             format_version=FORMAT_VERSION,
-            channels=["R", "G", "B", "A", "D", *(["MatAlpha"] if extract_material else [])],
+            channels=[
+                "R",
+                "G",
+                "B",
+                "A",
+                "D",
+                *(["MatAlpha"] if extract_material else []),
+            ],
             scale=0.5,  # The scene is bounded by [-scale, scale].
         )
         json.dump(info, f)
@@ -658,7 +698,9 @@ def main():
     parser.add_argument("--delete_material", action="store_true")
 
     # Prevent constants from being repeated.
-    parser.add_argument("--uniform_light_direction", required=True, type=float, nargs="+")
+    parser.add_argument(
+        "--uniform_light_direction", required=True, type=float, nargs="+"
+    )
     parser.add_argument("--basic_ambient", required=True, type=float)
     parser.add_argument("--basic_diffuse", required=True, type=float)
     args = parser.parse_args(raw_args)

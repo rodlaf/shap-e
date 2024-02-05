@@ -12,7 +12,9 @@ from shap_e.rendering.mesh import TriMesh
 
 from .constants import BASIC_AMBIENT_COLOR, BASIC_DIFFUSE_COLOR, UNIFORM_LIGHT_DIRECTION
 
-SCRIPT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blender_script.py")
+SCRIPT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "blender_script.py"
+)
 
 
 def render_model(
@@ -80,7 +82,9 @@ def render_model(
             subprocess.check_call(args)
         else:
             try:
-                output = subprocess.check_output(args, stderr=subprocess.STDOUT, timeout=timeout)
+                output = subprocess.check_output(
+                    args, stderr=subprocess.STDOUT, timeout=timeout
+                )
             except subprocess.CalledProcessError as exc:
                 raise RuntimeError(f"{exc}: {exc.output}") from exc
         if not os.path.exists(os.path.join(tmp_out, "info.json")):
@@ -89,7 +93,9 @@ def render_model(
                 # logged directly to stdout/stderr.
                 raise RuntimeError(f"render failed: output file missing")
             else:
-                raise RuntimeError(f"render failed: output file missing. Output: {output}")
+                raise RuntimeError(
+                    f"render failed: output file missing. Output: {output}"
+                )
         _combine_rgba(tmp_out)
         with zipfile.ZipFile(zip_out, mode="w") as zf:
             for name in os.listdir(tmp_out):
@@ -112,7 +118,11 @@ def render_mesh(
         with open(ply_path, "wb") as f:
             mesh.write_ply(f)
         render_model(
-            ply_path, output_path=output_path, num_images=num_images, backend=backend, **kwargs
+            ply_path,
+            output_path=output_path,
+            num_images=num_images,
+            backend=backend,
+            **kwargs,
         )
 
 
@@ -123,7 +133,8 @@ def _combine_rgba(out_dir: str):
         if not os.path.exists(paths[0]):
             break
         joined = np.stack(
-            [(np.array(Image.open(path)) >> 8).astype(np.uint8) for path in paths], axis=-1
+            [(np.array(Image.open(path)) >> 8).astype(np.uint8) for path in paths],
+            axis=-1,
         )
         Image.fromarray(joined).save(os.path.join(out_dir, f"{i:05}.png"))
         for path in paths:

@@ -5,7 +5,9 @@ import torch.nn as nn
 
 
 class SplitVectorDiffusion(nn.Module):
-    def __init__(self, *, device: torch.device, wrapped: nn.Module, n_ctx: int, d_latent: int):
+    def __init__(
+        self, *, device: torch.device, wrapped: nn.Module, n_ctx: int, d_latent: int
+    ):
         super().__init__()
         self.device = device
         self.n_ctx = n_ctx

@@ -62,7 +62,9 @@ class BlenderViewData(ViewData):
                 )
         if "MatAlpha" in channels:
             with self.zipfile.open(f"{index:05}_MatAlpha.png", "r") as f:
-                channel_map["MatAlpha"] = np.array(Image.open(f)).astype(np.float32) / 65536
+                channel_map["MatAlpha"] = (
+                    np.array(Image.open(f)).astype(np.float32) / 65536
+                )
 
         # The order of channels is user-specified.
         combined = np.stack([channel_map[k] for k in channels], axis=-1)

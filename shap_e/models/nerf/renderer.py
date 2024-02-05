@@ -55,8 +55,12 @@ class TwoStepNeRFRenderer(RayRenderer):
         self.coarse_background_model = coarse_background_model
         self.fine_background_model = fine_background_model
         self.outer_volume = outer_volume
-        self.foreground_stratified_depth_sampling_mode = foreground_stratified_depth_sampling_mode
-        self.background_stratified_depth_sampling_mode = background_stratified_depth_sampling_mode
+        self.foreground_stratified_depth_sampling_mode = (
+            foreground_stratified_depth_sampling_mode
+        )
+        self.background_stratified_depth_sampling_mode = (
+            background_stratified_depth_sampling_mode
+        )
         self.importance_sampling_options = AttrDict(importance_sampling_options or {})
         self.channel_scale = channel_scale
         self.device = device
@@ -94,7 +98,9 @@ class TwoStepNeRFRenderer(RayRenderer):
 
         # First, render rays using the coarse models with stratified ray samples.
         coarse_model, coarse_key = (
-            (self.fine_model, "fine_model") if shared else (self.coarse_model, "coarse_model")
+            (self.fine_model, "fine_model")
+            if shared
+            else (self.coarse_model, "coarse_model")
         )
         coarse_model = partial(
             coarse_model,
@@ -223,8 +229,12 @@ class OneStepNeRFRenderer(RayRenderer):
         self.volume = volume
         self.background_model = background_model
         self.outer_volume = outer_volume
-        self.foreground_stratified_depth_sampling_mode = foreground_stratified_depth_sampling_mode
-        self.background_stratified_depth_sampling_mode = background_stratified_depth_sampling_mode
+        self.foreground_stratified_depth_sampling_mode = (
+            foreground_stratified_depth_sampling_mode
+        )
+        self.background_stratified_depth_sampling_mode = (
+            background_stratified_depth_sampling_mode
+        )
         self.channel_scale = channel_scale
         self.device = device
         self.to(device)

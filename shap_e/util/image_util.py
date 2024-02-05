@@ -103,14 +103,18 @@ def remove_alpha(img: Image.Image, mode: str = "random") -> Image.Image:
         if mode == "random":
             height, width = img_arr.shape[:2]
             bg = Image.fromarray(
-                random.choice([_black_bg, _gray_bg, _checker_bg, _noise_bg])(height, width)
+                random.choice([_black_bg, _gray_bg, _checker_bg, _noise_bg])(
+                    height, width
+                )
             )
             bg.paste(img, mask=img)
             img = bg
         elif mode == "black" or mode == "white":
             img_arr = img_arr.astype(float)
             rgb, alpha = img_arr[:, :, :3], img_arr[:, :, -1:] / 255
-            background = np.zeros((1, 1, 3)) if mode == "black" else np.full((1, 1, 3), 255)
+            background = (
+                np.zeros((1, 1, 3)) if mode == "black" else np.full((1, 1, 3), 255)
+            )
             rgb = rgb * alpha + background * (1 - alpha)
             img = Image.fromarray(np.round(rgb).astype(np.uint8))
     return img
@@ -132,7 +136,9 @@ def _checker_bg(h: int, w: int) -> np.ndarray:
     xs = np.arange(w)[None, :, None] + np.random.randint(low=0, high=checker_size + 1)
     ys = np.arange(h)[:, None, None] + np.random.randint(low=0, high=checker_size + 1)
 
-    fields = np.logical_xor((xs // checker_size) % 2 == 0, (ys // checker_size) % 2 == 0)
+    fields = np.logical_xor(
+        (xs // checker_size) % 2 == 0, (ys // checker_size) % 2 == 0
+    )
     return np.where(fields, np.array([c1] * 3), np.array([c2] * 3)).astype(np.uint8)
 
 

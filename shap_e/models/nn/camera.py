@@ -49,8 +49,19 @@ class DifferentiableProjectiveCamera(DifferentiableCamera):
     y_fov: float
 
     def __post_init__(self):
-        assert self.x.shape[0] == self.y.shape[0] == self.z.shape[0] == self.origin.shape[0]
-        assert self.x.shape[1] == self.y.shape[1] == self.z.shape[1] == self.origin.shape[1] == 3
+        assert (
+            self.x.shape[0]
+            == self.y.shape[0]
+            == self.z.shape[0]
+            == self.origin.shape[0]
+        )
+        assert (
+            self.x.shape[1]
+            == self.y.shape[1]
+            == self.z.shape[1]
+            == self.origin.shape[1]
+            == 3
+        )
         assert (
             len(self.x.shape)
             == len(self.y.shape)
@@ -101,7 +112,8 @@ class DifferentiableProjectiveCamera(DifferentiableCamera):
         rays = torch.stack(
             [
                 torch.broadcast_to(
-                    self.origin.view(batch_size, 1, 3), [batch_size, directions.shape[1], 3]
+                    self.origin.view(batch_size, 1, 3),
+                    [batch_size, directions.shape[1], 3],
                 ),
                 directions,
             ],
@@ -113,7 +125,9 @@ class DifferentiableProjectiveCamera(DifferentiableCamera):
         """
         Creates a new camera for the resized view assuming the aspect ratio does not change.
         """
-        assert width * self.height == height * self.width, "The aspect ratio should not change."
+        assert (
+            width * self.height == height * self.width
+        ), "The aspect ratio should not change."
         return DifferentiableProjectiveCamera(
             origin=self.origin,
             x=self.x,
@@ -149,7 +163,9 @@ def project_out(vec1: torch.Tensor, vec2: torch.Tensor) -> torch.Tensor:
     return vec1 - proj * vec2
 
 
-def camera_orientation(toward: torch.Tensor, up: Optional[torch.Tensor] = None) -> torch.Tensor:
+def camera_orientation(
+    toward: torch.Tensor, up: Optional[torch.Tensor] = None
+) -> torch.Tensor:
     """
     :param toward: [batch_size x 3] unit vector from camera position to the object
     :param up: Optional [batch_size x 3] specifying the physical up direction in the world frame.

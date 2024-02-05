@@ -71,10 +71,16 @@ class PointCloudTransformerEncoder(VectorEncoder):
             nn.Parameter(torch.randn(latent_ctx, width, device=device, dtype=dtype)),
         )
 
-        self.input_proj = PosEmbLinear(pos_emb, input_channels, width, device=device, dtype=dtype)
-        self.output_proj = nn.Linear(width, d_latent // latent_ctx, device=device, dtype=dtype)
+        self.input_proj = PosEmbLinear(
+            pos_emb, input_channels, width, device=device, dtype=dtype
+        )
+        self.output_proj = nn.Linear(
+            width, d_latent // latent_ctx, device=device, dtype=dtype
+        )
 
-    def encode_to_vector(self, batch: AttrDict, options: Optional[AttrDict] = None) -> torch.Tensor:
+    def encode_to_vector(
+        self, batch: AttrDict, options: Optional[AttrDict] = None
+    ) -> torch.Tensor:
         _ = options
         points = batch.points.permute(0, 2, 1)  # NCL -> NLC
         h = self.input_proj(points)
@@ -154,9 +160,13 @@ class PerceiverEncoder(VectorEncoder):
         self.ln_post = nn.LayerNorm(width, device=device, dtype=dtype)
         self.register_parameter(
             "output_tokens",
-            nn.Parameter(torch.randn(self.latent_ctx, width, device=device, dtype=dtype)),
+            nn.Parameter(
+                torch.randn(self.latent_ctx, width, device=device, dtype=dtype)
+            ),
         )
-        self.output_proj = nn.Linear(width, d_latent // self.latent_ctx, device=device, dtype=dtype)
+        self.output_proj = nn.Linear(
+            width, d_latent // self.latent_ctx, device=device, dtype=dtype
+        )
 
     @abstractmethod
     def get_h_and_iterator(
@@ -169,7 +179,9 @@ class PerceiverEncoder(VectorEncoder):
         )
         """
 
-    def encode_to_vector(self, batch: AttrDict, options: Optional[AttrDict] = None) -> torch.Tensor:
+    def encode_to_vector(
+        self, batch: AttrDict, options: Optional[AttrDict] = None
+    ) -> torch.Tensor:
         h, it = self.get_h_and_iterator(batch, options=options)
         n_unrolls = self.get_n_unrolls()
 
@@ -256,7 +268,9 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
                     3 * 4 + 1, self.width, device=self.device, dtype=self.dtype
                 ),  # input size is for origin+x+y+z+fov
                 nn.GELU(),
-                nn.Linear(self.width, 2 * self.width, device=self.device, dtype=self.dtype),
+                nn.Linear(
+                    self.width, 2 * self.width, device=self.device, dtype=self.dtype
+                ),
             )
 
     def get_h_and_iterator(
@@ -314,7 +328,12 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
         def gen():
             while True:
                 examples = next(it)
-                assert examples.shape == (batch_size, self.inner_batch_size, n_patches, self.width)
+                assert examples.shape == (
+                    batch_size,
+                    self.inner_batch_size,
+                    n_patches,
+                    self.width,
+                )
                 views = examples.reshape(batch_size, -1, width) + self.pos_emb
                 yield views
 
@@ -326,7 +345,9 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
         """
         all_views = self.views_to_tensor(batch.views).to(self.device)
         if self.use_depth:
-            all_views = torch.cat([all_views, self.depths_to_tensor(batch.depths)], dim=2)
+            all_views = torch.cat(
+                [all_views, self.depths_to_tensor(batch.depths)], dim=2
+            )
         all_cameras = self.cameras_to_tensor(batch.cameras).to(self.device)
 
         batch_size, num_views, _, _, _ = all_views.shape
@@ -351,7 +372,9 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
         views_proj = views_proj * (scale + 1.0) + shift
         return views_proj
 
-    def views_to_tensor(self, views: Union[torch.Tensor, List[List[Image.Image]]]) -> torch.Tensor:
+    def views_to_tensor(
+        self, views: Union[torch.Tensor, List[List[Image.Image]]]
+    ) -> torch.Tensor:
         """
         Returns a [batch x num_views x 3 x size x size] tensor in the range [-1, 1].
         """
@@ -366,7 +389,9 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
             for img in inner_list:
                 img = img.resize((self.image_size,) * 2).convert("RGB")
                 inner_batch.append(
-                    torch.from_numpy(np.array(img)).to(device=self.device, dtype=torch.float32)
+                    torch.from_numpy(np.array(img)).to(
+                        device=self.device, dtype=torch.float32
+                    )
                     / 127.5
                     - 1
                 )
@@ -388,7 +413,9 @@ class PointCloudPerceiverEncoder(PerceiverEncoder):
             assert len(inner_list) == num_views
             inner_batch = []
             for arr in inner_list:
-                tensor = torch.from_numpy(arr).clamp(max=self.max_depth) / self.max_depth
+                tensor = (
+                    torch.from_numpy(arr).clamp(max=self.max_depth) / self.max_depth
+                )
                 tensor = tensor * 2 - 1
                 tensor = F.interpolate(
                     tensor[None, None],

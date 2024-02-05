@@ -41,7 +41,9 @@ def render_diffuse_mesh(
     )
     num_rays = len(all_collisions.normals)
     if mesh.vertex_colors is None:
-        vertex_colors = torch.tensor([[0.8, 0.8, 0.8]]).to(mesh.vertices).repeat(num_rays, 1)
+        vertex_colors = (
+            torch.tensor([[0.8, 0.8, 0.8]]).to(mesh.vertices).repeat(num_rays, 1)
+        )
     else:
         vertex_colors = mesh.vertex_colors
 
@@ -49,9 +51,13 @@ def render_diffuse_mesh(
         diffuse * torch.sum(all_collisions.normals * light_direction, dim=-1).abs()
     )
     vertex_colors = mesh.vertex_colors[mesh.faces[all_collisions.tri_indices]]
-    bary_products = torch.sum(vertex_colors * all_collisions.barycentric[..., None], axis=-2)
+    bary_products = torch.sum(
+        vertex_colors * all_collisions.barycentric[..., None], axis=-2
+    )
     out_colors = bary_products * light_coeffs[..., None]
-    res = torch.where(all_collisions.collides[:, None], out_colors, torch.zeros_like(out_colors))
+    res = torch.where(
+        all_collisions.collides[:, None], out_colors, torch.zeros_like(out_colors)
+    )
     return torch.cat([res, all_collisions.collides[:, None].float()], dim=-1).view(
         camera.height, camera.width, 4
     )

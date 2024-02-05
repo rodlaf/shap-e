@@ -42,7 +42,9 @@ class MLPModel(MetaModule, Model):
         super().__init__()
 
         if register_freqs:
-            self.register_buffer("freqs", 2.0 ** torch.arange(10, device=device).view(1, 10))
+            self.register_buffer(
+                "freqs", 2.0 ** torch.arange(10, device=device).view(1, 10)
+            )
 
         # Positional encoding
         self.posenc_version = posenc_version
@@ -85,7 +87,9 @@ class MLPModel(MetaModule, Model):
                 meta_stop = n_hidden_layers
 
         if meta_parameters:
-            metas = [meta_start <= layer <= meta_stop for layer in range(n_hidden_layers + 1)]
+            metas = [
+                meta_start <= layer <= meta_stop for layer in range(n_hidden_layers + 1)
+            ]
         else:
             metas = [False] * (n_hidden_layers + 1)
 
@@ -123,7 +127,10 @@ class MLPModel(MetaModule, Model):
         return self.output_activation(h_final)
 
     def _run_mlp(
-        self, position: torch.Tensor, direction: torch.Tensor, params: AttrDict[str, torch.Tensor]
+        self,
+        position: torch.Tensor,
+        direction: torch.Tensor,
+        params: AttrDict[str, torch.Tensor],
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         :return: the final and directionless activations at the given query

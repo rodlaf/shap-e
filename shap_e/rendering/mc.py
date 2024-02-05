@@ -65,15 +65,22 @@ def marching_cubes(
 
     # Create a flat array of [X, Y, Z] indices for each cube.
     cube_indices = torch.zeros(
-        grid_size[0] - 1, grid_size[1] - 1, grid_size[2] - 1, 3, device=dev, dtype=torch.long
+        grid_size[0] - 1,
+        grid_size[1] - 1,
+        grid_size[2] - 1,
+        3,
+        device=dev,
+        dtype=torch.long,
     )
-    cube_indices[range(grid_size[0] - 1), :, :, 0] = torch.arange(grid_size[0] - 1, device=dev)[
-        :, None, None
-    ]
-    cube_indices[:, range(grid_size[1] - 1), :, 1] = torch.arange(grid_size[1] - 1, device=dev)[
-        :, None
-    ]
-    cube_indices[:, :, range(grid_size[2] - 1), 2] = torch.arange(grid_size[2] - 1, device=dev)
+    cube_indices[range(grid_size[0] - 1), :, :, 0] = torch.arange(
+        grid_size[0] - 1, device=dev
+    )[:, None, None]
+    cube_indices[:, range(grid_size[1] - 1), :, 1] = torch.arange(
+        grid_size[1] - 1, device=dev
+    )[:, None]
+    cube_indices[:, :, range(grid_size[2] - 1), 2] = torch.arange(
+        grid_size[2] - 1, device=dev
+    )
     flat_cube_indices = cube_indices.reshape(-1, 3)
 
     # Create a flat array mapping each cube to 12 global edge indices.
@@ -96,15 +103,17 @@ def marching_cubes(
     # but we want to reduce this list to only the used vertices.
     used_vertex_indices = torch.unique(selected_tris.view(-1))
     used_edge_midpoints = edge_midpoints[used_vertex_indices]
-    old_index_to_new_index = torch.zeros(len(edge_midpoints), device=dev, dtype=torch.long)
+    old_index_to_new_index = torch.zeros(
+        len(edge_midpoints), device=dev, dtype=torch.long
+    )
     old_index_to_new_index[used_vertex_indices] = torch.arange(
         len(used_vertex_indices), device=dev, dtype=torch.long
     )
 
     # Rewrite the triangles to use the new indices
-    selected_tris = torch.gather(old_index_to_new_index, 0, selected_tris.view(-1)).reshape(
-        selected_tris.shape
-    )
+    selected_tris = torch.gather(
+        old_index_to_new_index, 0, selected_tris.view(-1)
+    ).reshape(selected_tris.shape)
 
     # Compute the actual interpolated coordinates corresponding to edge midpoints.
     v1 = torch.floor(used_edge_midpoints).to(torch.long)

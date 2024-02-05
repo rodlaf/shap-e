@@ -49,7 +49,13 @@ class MultiheadCrossAttention(nn.Module):
 
 class QKVMultiheadCrossAttention(nn.Module):
     def __init__(
-        self, *, device: torch.device, dtype: torch.dtype, heads: int, n_ctx: int, n_data: int
+        self,
+        *,
+        device: torch.device,
+        dtype: torch.dtype,
+        heads: int,
+        n_ctx: int,
+        n_data: int,
     ):
         super().__init__()
         self.device = device
@@ -177,10 +183,16 @@ class PointDiffusionPerceiver(nn.Module):
     ):
         super().__init__()
         self.time_embed = MLP(
-            device=device, dtype=dtype, width=width, init_scale=init_scale * math.sqrt(1.0 / width)
+            device=device,
+            dtype=dtype,
+            width=width,
+            init_scale=init_scale * math.sqrt(1.0 / width),
         )
         self.latent_embed = MLP(
-            device=device, dtype=dtype, width=width, init_scale=init_scale * math.sqrt(1.0 / width)
+            device=device,
+            dtype=dtype,
+            width=width,
+            init_scale=init_scale * math.sqrt(1.0 / width),
         )
         self.n_latent = n_latent
 

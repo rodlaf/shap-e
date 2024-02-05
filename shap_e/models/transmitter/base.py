@@ -62,12 +62,16 @@ class VectorEncoder(Encoder):
         self, batch: AttrDict, options: Optional[AttrDict] = None
     ) -> torch.Tensor:
         return self.latent_warp.warp(
-            self.latent_bottleneck(self.encode_to_vector(batch, options=options), options=options),
+            self.latent_bottleneck(
+                self.encode_to_vector(batch, options=options), options=options
+            ),
             options=options,
         )
 
     @abstractmethod
-    def encode_to_vector(self, batch: AttrDict, options: Optional[AttrDict] = None) -> torch.Tensor:
+    def encode_to_vector(
+        self, batch: AttrDict, options: Optional[AttrDict] = None
+    ) -> torch.Tensor:
         """
         Encode the batch into a single latent vector.
         """
@@ -76,7 +80,9 @@ class VectorEncoder(Encoder):
         self, vector: torch.Tensor, options: Optional[AttrDict] = None
     ) -> AttrDict:
         _ = options
-        return self.params_proj(self.latent_warp.unwarp(vector, options=options), options=options)
+        return self.params_proj(
+            self.latent_warp.unwarp(vector, options=options), options=options
+        )
 
 
 class ChannelsEncoder(VectorEncoder):
@@ -110,7 +116,9 @@ class ChannelsEncoder(VectorEncoder):
         :return: [batch_size, latent_ctx, latent_width]
         """
 
-    def encode_to_vector(self, batch: AttrDict, options: Optional[AttrDict] = None) -> torch.Tensor:
+    def encode_to_vector(
+        self, batch: AttrDict, options: Optional[AttrDict] = None
+    ) -> torch.Tensor:
         return self.encode_to_channels(batch, options=options).flatten(1)
 
     def bottleneck_to_channels(
@@ -124,7 +132,8 @@ class ChannelsEncoder(VectorEncoder):
     ) -> AttrDict:
         _ = options
         return self.params_proj(
-            self.bottleneck_to_channels(self.latent_warp.unwarp(vector)), options=options
+            self.bottleneck_to_channels(self.latent_warp.unwarp(vector)),
+            options=options,
         )
 
 
@@ -170,7 +179,9 @@ class VectorDecoder(nn.Module):
         self, vector: torch.Tensor, options: Optional[AttrDict] = None
     ) -> AttrDict:
         _ = options
-        return self.params_proj(self.latent_warp.unwarp(vector, options=options), options=options)
+        return self.params_proj(
+            self.latent_warp.unwarp(vector, options=options), options=options
+        )
 
 
 class ChannelsDecoder(VectorDecoder):
@@ -194,5 +205,6 @@ class ChannelsDecoder(VectorDecoder):
     ) -> AttrDict:
         _ = options
         return self.params_proj(
-            self.bottleneck_to_channels(self.latent_warp.unwarp(vector)), options=options
+            self.bottleneck_to_channels(self.latent_warp.unwarp(vector)),
+            options=options,
         )

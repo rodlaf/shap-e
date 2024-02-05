@@ -28,7 +28,9 @@ def sample_pmf(pmf: torch.Tensor, n_samples: int) -> torch.Tensor:
     assert last_dim == 1
 
     cdf = torch.cumsum(pmf.view(-1, support_size), dim=1)
-    inds = torch.searchsorted(cdf, torch.rand(cdf.shape[0], n_samples, device=cdf.device))
+    inds = torch.searchsorted(
+        cdf, torch.rand(cdf.shape[0], n_samples, device=cdf.device)
+    )
 
     return inds.view(*shape, n_samples, 1).clamp(0, support_size - 1)
 

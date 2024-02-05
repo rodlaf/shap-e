@@ -19,7 +19,11 @@ from pytorch3d.structures import Meshes
 
 from shap_e.models.nn.checkpoint import checkpoint
 
-from .blender.constants import BASIC_AMBIENT_COLOR, BASIC_DIFFUSE_COLOR, UNIFORM_LIGHT_DIRECTION
+from .blender.constants import (
+    BASIC_AMBIENT_COLOR,
+    BASIC_DIFFUSE_COLOR,
+    UNIFORM_LIGHT_DIRECTION,
+)
 from .torch_mesh import TorchMesh
 from .view_data import ProjectiveCamera
 
@@ -71,7 +75,9 @@ def render_images(
             del args[:num_camera_vecs]
             textures = args.pop(0)
 
-            meshes = Meshes(verts=verts_list, faces=faces_list, textures=TexturesVertex(textures))
+            meshes = Meshes(
+                verts=verts_list, faces=faces_list, textures=TexturesVertex(textures)
+            )
             lights = light_fn(light_vecs)
             cameras = camera_fn(camera_vecs)
             return render_images(
@@ -87,7 +93,9 @@ def render_images(
                 use_checkpoint=False,
             )
 
-        result = checkpoint(ckpt_fn, (*verts_list, *light_vecs, *camera_vecs, textures), (), True)
+        result = checkpoint(
+            ckpt_fn, (*verts_list, *light_vecs, *camera_vecs, textures), (), True
+        )
     else:
         raster_settings_soft = RasterizationSettings(
             image_size=image_size,
@@ -98,12 +106,16 @@ def render_images(
             perspective_correct=False,
         )
         renderer = MeshRenderer(
-            rasterizer=MeshRasterizer(cameras=cameras, raster_settings=raster_settings_soft),
+            rasterizer=MeshRasterizer(
+                cameras=cameras, raster_settings=raster_settings_soft
+            ),
             shader=SoftPhongShader(
                 device=meshes.device,
                 cameras=cameras,
                 lights=lights,
-                blend_params=BlendParams(sigma=sigma, gamma=gamma, background_color=(0, 0, 0)),
+                blend_params=BlendParams(
+                    sigma=sigma, gamma=gamma, background_color=(0, 0, 0)
+                ),
             ),
         )
         result = renderer(meshes)
@@ -140,10 +152,10 @@ def _deconstruct_tensor_props(
     return vecs, recreate_fn
 
 
-
 def convert_meshes(raw_meshes: Sequence[TorchMesh], default_brightness=0.8) -> Meshes:
     meshes = Meshes(
-        verts=[mesh.verts for mesh in raw_meshes], faces=[mesh.faces for mesh in raw_meshes]
+        verts=[mesh.verts for mesh in raw_meshes],
+        faces=[mesh.faces for mesh in raw_meshes],
     )
     rgbs = []
     for mesh in raw_meshes:
@@ -171,7 +183,9 @@ def convert_cameras(
         assert (
             camera.width == camera.height and camera.x_fov == camera.y_fov
         ), "viewports must be square"
-        assert camera.x_fov == cameras[0].x_fov, "all cameras must have same field-of-view"
+        assert (
+            camera.x_fov == cameras[0].x_fov
+        ), "all cameras must have same field-of-view"
         R = np.stack([-camera.x, -camera.y, camera.z], axis=0).T
         T = -R.T @ camera.origin
         Rs.append(R)
@@ -186,7 +200,11 @@ def convert_cameras(
 
 
 def convert_cameras_torch(
-    origins: torch.Tensor, xs: torch.Tensor, ys: torch.Tensor, zs: torch.Tensor, fov: float
+    origins: torch.Tensor,
+    xs: torch.Tensor,
+    ys: torch.Tensor,
+    zs: torch.Tensor,
+    fov: float,
 ) -> FoVPerspectiveCameras:
     Rs = []
     Ts = []
@@ -238,7 +256,8 @@ class BidirectionalLights(DirectionalLights):
 
     def diffuse(self, normals, points=None) -> torch.Tensor:
         return torch.maximum(
-            super().diffuse(normals, points=points), super().diffuse(-normals, points=points)
+            super().diffuse(normals, points=points),
+            super().diffuse(-normals, points=points),
         )
 
     def specular(self, normals, points, camera_position, shininess) -> torch.Tensor:

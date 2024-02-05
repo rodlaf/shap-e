@@ -63,7 +63,9 @@ def superdict(dictionary, key=None):
         return None
     if (key is None) or (key == ""):
         return dictionary
-    return AttrDict(OrderedDict((key + "." + k, value) for (k, value) in dictionary.items()))
+    return AttrDict(
+        OrderedDict((key + "." + k, value) for (k, value) in dictionary.items())
+    )
 
 
 def leveldict(dictionary, depth=0):
@@ -128,7 +130,9 @@ class MetaModule(nn.Module):
         else:
             self.register_meta_buffer(name, parameter)
 
-    def register(self, name: str, parameter: nn.Parameter, meta: bool, trainable: bool = True):
+    def register(
+        self, name: str, parameter: nn.Parameter, meta: bool, trainable: bool = True
+    ):
         if meta:
             if trainable:
                 self.register_meta_parameter(name, parameter)
@@ -189,7 +193,9 @@ class MetaModule(nn.Module):
 
         def meta_iterator(module):
             meta = module._meta_state_dict if isinstance(module, MetaModule) else set()
-            for name, param in itertools.chain(module._buffers.items(), module._parameters.items()):
+            for name, param in itertools.chain(
+                module._buffers.items(), module._parameters.items()
+            ):
                 if name in meta:
                     yield name, param
 
@@ -221,7 +227,9 @@ class MetaModule(nn.Module):
 def batch_meta_parameters(net, batch_size):
     params = AttrDict()
     for name, param in net.named_meta_parameters():
-        params[name] = param.clone().unsqueeze(0).repeat(batch_size, *[1] * len(param.shape))
+        params[name] = (
+            param.clone().unsqueeze(0).repeat(batch_size, *[1] * len(param.shape))
+        )
     return params
 
 
@@ -229,5 +237,7 @@ def batch_meta_state_dict(net, batch_size):
     state_dict = AttrDict()
     meta_parameters = set([name for name, _ in net.named_meta_parameters()])
     for name, param in net.meta_state_dict().items():
-        state_dict[name] = param.clone().unsqueeze(0).repeat(batch_size, *[1] * len(param.shape))
+        state_dict[name] = (
+            param.clone().unsqueeze(0).repeat(batch_size, *[1] * len(param.shape))
+        )
     return state_dict

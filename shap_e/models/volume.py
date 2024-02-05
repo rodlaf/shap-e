@@ -141,7 +141,9 @@ class BoundingBoxVolume(MetaModule, Volume):
         batch_size, *shape, _ = origin.shape
         ones = [1] * len(shape)
         bbox = self.bbox.view(1, *ones, 2, 3)
-        ts = safe_divide(bbox - origin[..., None, :], direction[..., None, :], epsilon=epsilon)
+        ts = safe_divide(
+            bbox - origin[..., None, :], direction[..., None, :], epsilon=epsilon
+        )
 
         # Cases to think about:
         #
@@ -210,7 +212,9 @@ class UnboundedVolume(MetaModule, Volume):
         """
 
         batch_size, *shape, _ = origin.shape
-        t0 = torch.zeros(batch_size, *shape, 1, dtype=origin.dtype, device=origin.device)
+        t0 = torch.zeros(
+            batch_size, *shape, 1, dtype=origin.dtype, device=origin.device
+        )
         if t0_lower is not None:
             t0 = torch.maximum(t0, t0_lower)
         t1 = t0 + self.max_dist
