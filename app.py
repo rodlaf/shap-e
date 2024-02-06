@@ -51,6 +51,8 @@ app = App(
 
 
 def preload_model():
+    print('pre-loading model...')
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     xm = load_model("transmitter", device=device)
@@ -64,13 +66,17 @@ def preload_model():
     # with open(os.path.join(CACHE_PATH, 'diffusion.pickle'), 'rb') as handle:
     #     diffusion = pickle.load(handle)
 
+    print('done pre-loading model')
+
     return xm, model, diffusion
 
 
 @app.rest_api(loader=preload_model)
 def generate(**inputs):
     xm, model, diffusion = inputs["context"]
+
     prompt = inputs["prompt"]
+    submission_id = inputs["submission_id"]
 
     batch_size = 1
     guidance_scale = 15.0
@@ -90,24 +96,26 @@ def generate(**inputs):
         sigma_max=160,
         s_churn=0,
     )
-
     latent = latents[0]
 
+    # save output
     t = decode_latent_mesh(xm, latent).tri_mesh()
     with open(f'output.obj', 'w') as f:
         t.write_obj(f)
 
     # save to pocketbase
     auth_token = get_auth_token()
-    upload_output(auth_token=auth_token, file_path='output.obj')
+    upload_output(
+        auth_token=auth_token, 
+        submission_id=submission_id,
+        file_path='output.obj',
+    )
 
 
 def get_auth_token() -> str:
     identity = os.getenv('POCKETBASE_IDENTITY')
     password = os.getenv('POCKETBASE_PASSWORD')
     base_url = os.getenv('POCKETBASE_URL')
-
-    print(identity, password, base_url)
 
     url = base_url + '/api/admins/auth-with-password'
     body = {
@@ -117,25 +125,25 @@ def get_auth_token() -> str:
 
     response = requests.post(url, json=body)
     response_object = json.loads(response.content)
-    print(response, response_object)
 
     return response_object['token']
 
 
-def upload_output(auth_token: str, file_path: str) -> None:
+def upload_output(
+        auth_token: str, 
+        file_path: str,
+        submission_id: str
+    ) -> None:
     base_url = os.getenv('POCKETBASE_URL')
 
-    url = base_url + '/api/collections/submissions/records'
-    body = {
-        'prompt': 'new prompt', 
-        'author': 'm1jfsuhyf2ls4g0', 
-    }
+    url = base_url + '/api/collections/submissions/records/' + submission_id
     files = {
         'output': open(file_path, 'rb')
     }
     headers = {
         'Authorization': auth_token
     }
-    response = requests.post(url, headers=headers, data=body, files=files)
 
-    print(response.content)
+    response = requests.patch(url, headers=headers, files=files)
+
+    # print(response.content)
