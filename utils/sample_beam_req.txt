@@ -1,12 +1,12 @@
 
 
 curl -X POST \
-  --compressed 'https://3m58q-65c1887872bb7d000626eb2c.apps.beam.cloud' \
-  -H 'Accept: */*' \
-  -H 'Accept-Encoding: gzip, deflate' \
-  -H 'Authorization: Basic ZWRjNzI5NWYwNzQzYTk0Y2Y3OTYzNmNkYmVlOWVkZDM6YjMwNWViZDlhOWM4Y2EzMDM4MmRmZmRmYWU3YzY2YTk=' \
-  -H 'Connection: keep-alive' \
-  -H 'Content-Type: application/json' \
+    --compressed 'https://3m58q.apps.beam.cloud' \
+    -H 'Accept: */*' \
+    -H 'Accept-Encoding: gzip, deflate' \
+    -H 'Authorization: Basic ZWRjNzI5NWYwNzQzYTk0Y2Y3OTYzNmNkYmVlOWVkZDM6YjMwNWViZDlhOWM4Y2EzMDM4MmRmZmRmYWU3YzY2YTk=' \
+    -H 'Connection: keep-alive' \
+    -H 'Content-Type: application/json' \
     -d '{
         "prompt": "a baby dolphin",
         "submission_id": "tepxrvi5jjofx49"

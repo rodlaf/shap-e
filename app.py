@@ -24,7 +24,7 @@ app = App(
     runtime=Runtime(
         cpu=1,
         memory="8Gi",
-        gpu="T4",
+        gpu="A10G",
         image=Image(
             python_version="python3.9",
             python_packages=[
@@ -53,18 +53,18 @@ app = App(
 def preload_model():
     print('pre-loading model...')
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    xm = load_model("transmitter", device=device)
-    model = load_model("text300M", device=device)
-    diffusion = diffusion_from_config(load_config("diffusion"))
+    # xm = load_model("transmitter", device=device)
+    # model = load_model("text300M", device=device)
+    # diffusion = diffusion_from_config(load_config("diffusion"))
 
-    # with open(os.path.join(CACHE_PATH, 'transmitter.pickle'), 'rb') as handle:
-    #     xm = pickle.load(handle)
-    # with open(os.path.join(CACHE_PATH, 'text300M.pickle'), 'rb') as handle:
-    #     model = pickle.load(handle)
-    # with open(os.path.join(CACHE_PATH, 'diffusion.pickle'), 'rb') as handle:
-    #     diffusion = pickle.load(handle)
+    with open(os.path.join(CACHE_PATH, 'transmitter.pickle'), 'rb') as handle:
+        xm = pickle.load(handle)
+    with open(os.path.join(CACHE_PATH, 'text300M.pickle'), 'rb') as handle:
+        model = pickle.load(handle)
+    with open(os.path.join(CACHE_PATH, 'diffusion.pickle'), 'rb') as handle:
+        diffusion = pickle.load(handle)
 
     print('done pre-loading model')
 
