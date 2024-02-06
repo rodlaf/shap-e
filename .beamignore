@@ -8,3 +8,5 @@ __pycache__
 
 samples/
 shap_e/examples/
+
+cached_models/
