@@ -1,11 +1,9 @@
-from beam import App, Runtime, Image, Output, Volume
-import torch
+from beam import App, Runtime, Image, Volume
+import subprocess
 
 import os
 import dill as pickle
 
-from shap_e.diffusion.gaussian_diffusion import diffusion_from_config
-from shap_e.models.download import load_model, load_config
 from shap_e.diffusion.sample import sample_latents
 from shap_e.util.notebooks import decode_latent_mesh
 
@@ -18,7 +16,6 @@ load_dotenv()
 
 CACHE_PATH = "./cached_models"
 
-
 app = App(
     name="shap-e",
     runtime=Runtime(
@@ -26,6 +23,13 @@ app = App(
         memory="8Gi",
         gpu="A10G",
         image=Image(
+            base_image="ubuntu:20.04",
+            commands=[
+                'apt-get update && apt-get install -y nodejs npm',
+                'npm cache clean -f && npm install -g n && n stable',
+                'node -v',
+                'npm install -g obj2gltf',
+            ],
             python_version="python3.9",
             python_packages=[
                 "filelock",
@@ -42,22 +46,18 @@ app = App(
                 "blobfile",
                 "dill",
                 "python-dotenv",
+                "pyyaml",
+                "ipywidgets",
                 "clip@git+https://github.com/openai/CLIP.git",
             ],
         ),
     ),
-    volumes=[Volume(name="cached_models", path=CACHE_PATH)]
+    volumes=[Volume(name="cached_models", path=CACHE_PATH)],
 )
 
 
 def preload_model():
     print('pre-loading model...')
-
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # xm = load_model("transmitter", device=device)
-    # model = load_model("text300M", device=device)
-    # diffusion = diffusion_from_config(load_config("diffusion"))
 
     with open(os.path.join(CACHE_PATH, 'transmitter.pickle'), 'rb') as handle:
         xm = pickle.load(handle)
@@ -73,6 +73,8 @@ def preload_model():
 
 @app.rest_api(loader=preload_model)
 def generate(**inputs):
+    auth_token = get_auth_token()
+
     xm, model, diffusion = inputs["context"]
 
     prompt = inputs["prompt"]
@@ -81,6 +83,7 @@ def generate(**inputs):
     batch_size = 1
     guidance_scale = 15.0
 
+    set_status(auth_token=auth_token, submission_id=submission_id, status='Generating 3D model...')
     latents = sample_latents(
         batch_size=batch_size,
         model=model,
@@ -97,6 +100,8 @@ def generate(**inputs):
         s_churn=0,
     )
     latent = latents[0]
+    
+    set_status(auth_token=auth_token, submission_id=submission_id, status='Saving output...')
 
     # save output
     t = decode_latent_mesh(xm, latent).tri_mesh()
@@ -104,12 +109,25 @@ def generate(**inputs):
         t.write_obj(f)
 
     # save to pocketbase
-    auth_token = get_auth_token()
     upload_output(
         auth_token=auth_token, 
         submission_id=submission_id,
         file_path='output.obj',
     )
+    set_status(auth_token=auth_token, submission_id=submission_id, status='Converting obj to gltf...')
+    # convert output to gltf
+    result = subprocess.run(['obj2gltf', '-i', 'output.obj', '-o', 'output.gltf', '&&', 'pwd'], capture_output=True, text=True)
+    print('stdout: ', result.stdout)
+    print('stderr: ', result.stderr)
+    set_status(auth_token=auth_token, submission_id=submission_id, status='Uploading gltf...')
+    # save to pocketbase
+    upload_gltf(
+        auth_token=auth_token, 
+        submission_id=submission_id,
+        file_path='output.gltf',
+    )
+    set_status(auth_token=auth_token, submission_id=submission_id, status='Done!!!')
+
 
 
 def get_auth_token() -> str:
@@ -147,3 +165,38 @@ def upload_output(
     response = requests.patch(url, headers=headers, files=files)
 
     # print(response.content)
+
+
+def upload_gltf(
+        auth_token: str, 
+        file_path: str,
+        submission_id: str
+    ) -> None:
+    base_url = os.getenv('POCKETBASE_URL')
+
+    url = base_url + '/api/collections/submissions/records/' + submission_id
+    files = {
+        'output_gltf': open(file_path, 'rb')
+    }
+    headers = {
+        'Authorization': auth_token
+    }
+
+    response = requests.patch(url, headers=headers, files=files)
+
+
+def set_status(
+        auth_token: str, 
+        submission_id: str,
+        status: str,
+) -> None:
+    base_url = os.getenv('POCKETBASE_URL')
+    url = base_url + '/api/collections/submissions/records/' + submission_id
+    headers = {
+        'Authorization': auth_token
+    }
+    body = {
+        "status": status
+    }
+    response = requests.patch(url, headers=headers, json=body)
+    print(response)
