@@ -9,3 +9,17 @@
         "prompt": "a red dog",
         "submission_id": "6x0alpmdn9rdet4"
     }'
+
+
+
+
+
+The following reads a file passed as an argument line by line:
+
+rm output.mtl
+# genereate
+while IFS= read -r line; do
+    if [[ $line == f* ]]; then
+        echo $line >> output.mtl
+    fi;
+done < output.obj
