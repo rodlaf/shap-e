@@ -1,12 +1,12 @@
- curl -X POST \
-  --compressed 'https://3m58q-65c7282eb1f8b9000ac71145.apps.beam.cloud' \
+curl -X POST \
+  --compressed 'https://3m58q-65c73a44c934990009ae48e6.apps.beam.cloud' \
   -H 'Accept: */*' \
   -H 'Accept-Encoding: gzip, deflate' \
   -H 'Authorization: Basic ZWRjNzI5NWYwNzQzYTk0Y2Y3OTYzNmNkYmVlOWVkZDM6YjMwNWViZDlhOWM4Y2EzMDM4MmRmZmRmYWU3YzY2YTk=' \
   -H 'Connection: keep-alive' \
   -H 'Content-Type: application/json' \
     -d '{
-        "prompt": "a red dog",
+        "prompt": "a green dog",
         "submission_id": "6x0alpmdn9rdet4"
     }'
 

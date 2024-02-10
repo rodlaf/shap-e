@@ -19,17 +19,10 @@ CACHE_PATH = "./cached_models"
 app = App(
     name="shap-e",
     runtime=Runtime(
-        cpu=1,
+        cpu=2,
         memory="8Gi",
-        gpu="A10G",
+        gpu="A100",
         image=Image(
-            base_image="ubuntu:20.04",
-            commands=[
-                'apt-get update && apt-get install -y nodejs npm',
-                'npm cache clean -f && npm install -g n && n stable',
-                'node -v',
-                'npm install -g obj2gltf',
-            ],
             python_version="python3.9",
             python_packages=[
                 "filelock",
@@ -48,6 +41,8 @@ app = App(
                 "python-dotenv",
                 "pyyaml",
                 "ipywidgets",
+                "trimesh",
+                "pygltflib",
                 "clip@git+https://github.com/openai/CLIP.git",
             ],
         ),
@@ -116,7 +111,7 @@ def generate(**inputs):
     )
     set_status(auth_token=auth_token, submission_id=submission_id, status='Converting obj to gltf...')
     # convert output to gltf
-    result = subprocess.run(['obj2gltf', '-i', 'output.obj', '-o', 'output.gltf', '&&', 'pwd'], capture_output=True, text=True)
+    result = subprocess.run(['python', 'OBJwVS_to_glTF.py', 'output.obj', 'output.gltf'], capture_output=True, text=True)
     print('stdout: ', result.stdout)
     print('stderr: ', result.stderr)
     set_status(auth_token=auth_token, submission_id=submission_id, status='Uploading gltf...')
